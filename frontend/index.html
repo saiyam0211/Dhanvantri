@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmGenome - Pharmacogenomics Analysis Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-dna"></i>
+                <span>PharmGenome</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#" class="nav-link active" data-section="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-link" data-section="analysis">
+                    <i class="fas fa-microscope"></i>
+                    <span>New Analysis</span>
+                </a>
+                <a href="#" class="nav-link" data-section="reports">
+                    <i class="fas fa-file-medical"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="#" class="nav-link" data-section="drugs">
+                    <i class="fas fa-pills"></i>
+                    <span>Drug Database</span>
+                </a>
+                <a href="#" class="nav-link" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+            <div class="nav-user">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="section-header">
+                <h1>Dashboard</h1>
+                <p>Overview of your pharmacogenomics analyses and reports</p>
+            </div>
+
+            <!-- Statistics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-medical"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="total-reports">0</h3>
+                        <p>Total Reports</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-dna"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="total-variants">0</h3>
+                        <p>Variants Analyzed</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-pills"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="total-drugs">0</h3>
+                        <p>Drugs Analyzed</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="high-risk-interactions">0</h3>
+                        <p>High-Risk Interactions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="dashboard-section">
+                <h2>Quick Actions</h2>
+                <div class="quick-actions">
+                    <a href="#" class="action-btn primary" onclick="startNewAnalysis()">
+                        <i class="fas fa-plus"></i>
+                        New Analysis
+                    </a>
+                    <a href="#" class="action-btn secondary" onclick="switchSection('reports')">
+                        <i class="fas fa-eye"></i>
+                        View Reports
+                    </a>
+                    <a href="#" class="action-btn secondary" onclick="switchSection('drugs')">
+                        <i class="fas fa-search"></i>
+                        Browse Drugs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Reports -->
+            <div class="dashboard-section">
+                <h2>Recent Reports</h2>
+                <div id="recent-reports" class="recent-reports">
+                    <!-- Recent reports will be populated here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Analysis Section -->
+        <section id="analysis" class="content-section">
+            <div class="section-header">
+                <h1>New Pharmacogenomics Analysis</h1>
+                <p>Upload your VCF file and select drugs for personalized analysis</p>
+                <div style="margin-top: 1rem;">
+                    <button class="btn secondary" onclick="startNewAnalysis()" style="font-size: 0.9rem;">
+                        <i class="fas fa-refresh"></i>
+                        Start New Analysis
+                    </button>
+                </div>
+            </div>
+
+            <div class="analysis-container">
+                <!-- Step 1: Patient Information -->
+                <div id="step-1" class="analysis-step active">
+                    <div class="step-header">
+                        <h2>
+                            <span class="step-number">1</span>
+                            Patient Information
+                        </h2>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient-id">Patient ID *</label>
+                        <input type="text" id="patient-id" placeholder="Enter unique patient identifier" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient-name">Patient Name (Optional)</label>
+                        <input type="text" id="patient-name" placeholder="Enter patient name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="analysis-notes">Analysis Notes (Optional)</label>
+                        <textarea id="analysis-notes" placeholder="Add any relevant notes for this analysis"></textarea>
+                    </div>
+
+                    <div class="step-actions">
+                        <div></div>
+                        <button class="btn primary" onclick="nextStep(2)">
+                            Next: Upload VCF
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: VCF File Upload -->
+                <div id="step-2" class="analysis-step">
+                    <div class="step-header">
+                        <h2>
+                            <span class="step-number">2</span>
+                            Upload VCF File
+                        </h2>
+                    </div>
+
+                    <div class="upload-area" id="vcf-upload-area">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Upload VCF File</h3>
+                            <p>Drag and drop your VCF file here, or click to browse</p>
+                            <input type="file" id="vcf-file" accept=".vcf,.vcf.gz" style="display: none;">
+                            <button class="btn secondary">Choose File</button>
+                        </div>
+                    </div>
+
+                    <div id="vcf-file-info" class="file-info" style="display: none;">
+                        <div class="file-details">
+                            <i class="fas fa-file-alt"></i>
+                            <div>
+                                <h4 id="vcf-filename">filename.vcf</h4>
+                                <p id="vcf-filesize">0 MB</p>
+                            </div>
+                            <button class="btn-icon" onclick="removeVcfFile()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div id="vcf-validation" class="file-validation">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Validating file...</span>
+                        </div>
+                    </div>
+
+                    <div class="step-actions">
+                        <button class="btn secondary" onclick="previousStep(1)">
+                            <i class="fas fa-arrow-left"></i>
+                            Previous
+                        </button>
+                        <button class="btn primary" id="vcf-next-btn" onclick="nextStep(3)" disabled>
+                            Next: Select Drugs
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Drug Selection -->
+                <div id="step-3" class="analysis-step">
+                    <div class="step-header">
+                        <h2>
+                            <span class="step-number">3</span>
+                            Drug Selection
+                        </h2>
+                    </div>
+
+                    <div class="drug-search">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="drug-search" placeholder="Search for drugs...">
+                        </div>
+                        
+                        <!-- Custom Drug Input -->
+                        <div class="custom-drug-input">
+                            <div class="input-group">
+                                <input type="text" id="custom-drug-name" placeholder="Enter custom drug name (e.g., Aspirin, Metoprolol)">
+                                <button class="btn primary" id="add-custom-drug-btn" onclick="addCustomDrug()">
+                                    <i class="fas fa-plus"></i>
+                                    Add Drug
+                                </button>
+                            </div>
+                            <p class="help-text">
+                                <i class="fas fa-info-circle"></i>
+                                Add drugs not found in the database. Enter the generic or brand name.
+                            </p>
+                        </div>
+
+                        <div class="drug-categories">
+                            <button class="category-btn active" data-category="all">All Drugs</button>
+                            <button class="category-btn" data-category="cardiovascular">Cardiovascular</button>
+                            <button class="category-btn" data-category="psychiatric">Psychiatric</button>
+                            <button class="category-btn" data-category="oncology">Oncology</button>
+                            <button class="category-btn" data-category="pain">Pain Management</button>
+                            <button class="category-btn" data-category="other">Other</button>
+                        </div>
+                    </div>
+
+                    <div class="drug-selection-container">
+                        <div class="available-drugs">
+                            <h3>Available Drugs</h3>
+                            <div id="available-drugs" class="drug-list">
+                                <!-- Available drugs will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="selected-drugs">
+                            <h3>Selected Drugs (<span id="selected-count">0</span>)</h3>
+                            <div id="selected-drug-list" class="drug-list">
+                                <!-- Selected drugs will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-actions">
+                        <button class="btn secondary" onclick="previousStep(2)">
+                            <i class="fas fa-arrow-left"></i>
+                            Previous
+                        </button>
+                        <button class="btn primary" id="drug-next-btn" onclick="nextStep(4)" disabled>
+                            Next: Configure
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Analysis Configuration -->
+                <div id="step-4" class="analysis-step">
+                    <div class="step-header">
+                        <h2>
+                            <span class="step-number">4</span>
+                            Analysis Configuration
+                        </h2>
+                    </div>
+
+                    <div class="config-options">
+                        <div class="config-group">
+                            <h3>AI Analysis Options</h3>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="use-cohere" checked>
+                                    <span class="checkmark"></span>
+                                    Use AI for enhanced analysis
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="detailed-analysis" checked>
+                                    <span class="checkmark"></span>
+                                    Generate detailed analysis
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <h3>Report Options</h3>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-alternatives" checked>
+                                    <span class="checkmark"></span>
+                                    Include alternative drug recommendations
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-references" checked>
+                                    <span class="checkmark"></span>
+                                    Include scientific references
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="patient-friendly" checked>
+                                    <span class="checkmark"></span>
+                                    Generate patient-friendly summary
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-actions">
+                        <button class="btn secondary" onclick="previousStep(3)">
+                            <i class="fas fa-arrow-left"></i>
+                            Previous
+                        </button>
+                        <button class="btn primary" onclick="startAnalysis()">
+                            <i class="fas fa-play"></i>
+                            Start Analysis
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analysis Progress -->
+                <div id="analysis-progress" class="progress-container" style="display: none;">
+                    <h2>Analysis in Progress</h2>
+                    
+                    <div class="progress-steps">
+                        <div class="progress-step completed">
+                            <i class="fas fa-check"></i>
+                            <span>File Upload</span>
+                        </div>
+                        <div class="progress-step active">
+                            <i class="fas fa-cog fa-spin"></i>
+                            <span>Processing</span>
+                        </div>
+                        <div class="progress-step">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Analysis</span>
+                        </div>
+                        <div class="progress-step">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Report</span>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+
+                    <div id="progress-text" class="progress-text">Initializing analysis...</div>
+                    <div id="progress-details" class="progress-details">Please wait while we process your data</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reports" class="content-section">
+            <div class="section-header">
+                <h1>Analysis Reports</h1>
+                <p>View and manage your pharmacogenomics analysis reports</p>
+            </div>
+
+            <div class="reports-controls">
+                <div class="search-filter">
+                    <input type="text" id="report-search" placeholder="Search reports...">
+                    <select id="report-filter">
+                        <option value="all">All Reports</option>
+                        <option value="recent">Recent (30 days)</option>
+                        <option value="high-risk">High Risk</option>
+                        <option value="completed">Completed</option>
+                        <option value="processing">Processing</option>
+                    </select>
+                </div>
+                <div class="view-options">
+                    <button class="view-btn active" data-view="grid">
+                        <i class="fas fa-th"></i>
+                    </button>
+                    <button class="view-btn" data-view="list">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="reports-container" class="reports-container">
+                <!-- Reports will be populated here -->
+            </div>
+        </section>
+
+        <!-- Drug Database Section -->
+        <section id="drugs" class="content-section">
+            <div class="section-header">
+                <h1>Drug Database</h1>
+                <p>Browse pharmacogenomics information for various medications</p>
+            </div>
+
+            <div class="drug-database-controls">
+                <input type="text" id="drug-db-search" placeholder="Search drugs...">
+                <div class="filter-options">
+                    <select id="drug-category-filter">
+                        <option value="all">All Categories</option>
+                        <option value="cardiovascular">Cardiovascular</option>
+                        <option value="psychiatric">Psychiatric</option>
+                        <option value="oncology">Oncology</option>
+                        <option value="pain">Pain Management</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <select id="drug-evidence-filter">
+                        <option value="all">All Evidence Levels</option>
+                        <option value="high">High Evidence</option>
+                        <option value="medium">Medium Evidence</option>
+                        <option value="low">Low Evidence</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="drug-database-grid" class="drug-database-grid">
+                <!-- Drug cards will be populated here -->
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="content-section">
+            <div class="section-header">
+                <h1>Settings</h1>
+                <p>Configure your application preferences and API settings</p>
+            </div>
+
+            <div class="settings-container">
+                <div class="settings-group">
+                    <h2>API Configuration</h2>
+                    <div class="form-group">
+                        <label for="api-endpoint">API Endpoint</label>
+                        <input type="text" id="api-endpoint" value="http://localhost:8000" placeholder="Enter API endpoint URL">
+                    </div>
+                    <button class="btn primary" onclick="testConnection()">
+                        <i class="fas fa-wifi"></i>
+                        Test Connection
+                    </button>
+                </div>
+
+                <div class="settings-group">
+                    <h2>Analysis Preferences</h2>
+                    <div class="setting-item">
+                        <label>Enable AI Analysis by Default</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="default-ai-analysis" checked>
+                            <span class="slider"></span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Include References by Default</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="default-references" checked>
+                            <span class="slider"></span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Patient-Friendly Reports</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="default-patient-friendly" checked>
+                            <span class="slider"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h2>Data Management</h2>
+                    <div class="quick-actions">
+                        <button class="btn secondary" onclick="exportAllData()">
+                            <i class="fas fa-download"></i>
+                            Export All Data
+                        </button>
+                        <button class="btn danger" onclick="clearAllData()">
+                            <i class="fas fa-trash"></i>
+                            Clear All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <!-- Report Modal -->
+    <div id="report-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-report-title">Report Details</h2>
+                <button class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-report-content">
+                    <!-- Report content will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('report-modal')">Close</button>
+                <button class="btn primary">Download Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drug Modal -->
+    <div id="drug-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-drug-title">Drug Information</h2>
+                <button class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-drug-content">
+                    <!-- Drug content will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('drug-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container">
+        <!-- Toast notifications will appear here -->
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
