@@ -1,0 +1,36 @@
+services:
+  pharmgenome:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount uploads and outputs for persistence
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      # Mount frontend for development (optional)
+      - ./frontend:/app/frontend
+    environment:
+      - FLASK_ENV=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - pharmgenome-network
+
+networks:
+  pharmgenome-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  outputs:
+  logs:
+  data:
