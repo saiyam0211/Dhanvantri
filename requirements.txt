@@ -1,0 +1,42 @@
+# Core dependencies
+cyvcf2>=0.30.14
+httpx>=0.24.0
+requests>=2.31.0
+jinja2>=3.1.2
+pysam>=0.21.0
+concurrent-log-handler>=0.9.24
+pandas>=1.5.3
+numpy>=1.24.3
+matplotlib>=3.7.1
+seaborn>=0.11.0
+python-dotenv>=0.19.0
+# pyvcf replaced with cyvcf2 which is more modern and maintained
+google-generativeai>=0.3.0
+openai>=0.27.0
+requests-cache>=0.9.0
+retrying>=1.3.3
+cohere>=5.15.0
+
+# VCF processing
+pybedtools>=0.9.0
+# bcftools is installed directly in the Dockerfile
+
+# Parallel processing
+tqdm>=4.65.0
+joblib>=1.2.0  # For more efficient parallel processing
+psutil>=5.9.5  # For memory monitoring
+
+# Performance
+pyarrow>=12.0.0  # For efficient data storage
+
+# PDF generation (optional)
+weasyprint>=59.0
+pdfkit>=1.0.0
+
+# Testing
+pytest>=7.3.1
+pytest-cov>=4.1.0
+
+# Type checking
+mypy>=1.3.0
+types-requests>=2.31.0.1
