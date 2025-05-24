@@ -11,7 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
@@ -48,16 +47,13 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="main-content">
-        <!-- Dashboard Section -->
         <section id="dashboard" class="content-section active">
             <div class="section-header">
                 <h1>Dashboard</h1>
                 <p>Overview of your pharmacogenomics analyses and reports</p>
             </div>
 
-            <!-- Statistics Grid -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">
@@ -97,7 +93,6 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
             <div class="dashboard-section">
                 <h2>Quick Actions</h2>
                 <div class="quick-actions">
@@ -116,16 +111,13 @@
                 </div>
             </div>
 
-            <!-- Recent Reports -->
             <div class="dashboard-section">
                 <h2>Recent Reports</h2>
                 <div id="recent-reports" class="recent-reports">
-                    <!-- Recent reports will be populated here -->
                 </div>
             </div>
         </section>
 
-        <!-- Analysis Section -->
         <section id="analysis" class="content-section">
             <div class="section-header">
                 <h1>New Pharmacogenomics Analysis</h1>
@@ -139,7 +131,6 @@
             </div>
 
             <div class="analysis-container">
-                <!-- Step 1: Patient Information -->
                 <div id="step-1" class="analysis-step active">
                     <div class="step-header">
                         <h2>
@@ -172,7 +163,6 @@
                     </div>
                 </div>
 
-                <!-- Step 2: VCF File Upload -->
                 <div id="step-2" class="analysis-step">
                     <div class="step-header">
                         <h2>
@@ -220,7 +210,6 @@
                     </div>
                 </div>
 
-                <!-- Step 3: Drug Selection -->
                 <div id="step-3" class="analysis-step">
                     <div class="step-header">
                         <h2>
@@ -235,7 +224,6 @@
                             <input type="text" id="drug-search" placeholder="Search for drugs...">
                         </div>
                         
-                        <!-- Custom Drug Input -->
                         <div class="custom-drug-input">
                             <div class="input-group">
                                 <input type="text" id="custom-drug-name" placeholder="Enter custom drug name (e.g., Aspirin, Metoprolol)">
@@ -264,14 +252,12 @@
                         <div class="available-drugs">
                             <h3>Available Drugs</h3>
                             <div id="available-drugs" class="drug-list">
-                                <!-- Available drugs will be populated here -->
                             </div>
                         </div>
 
                         <div class="selected-drugs">
                             <h3>Selected Drugs (<span id="selected-count">0</span>)</h3>
                             <div id="selected-drug-list" class="drug-list">
-                                <!-- Selected drugs will be populated here -->
                             </div>
                         </div>
                     </div>
@@ -288,7 +274,6 @@
                     </div>
                 </div>
 
-                <!-- Step 4: Analysis Configuration -->
                 <div id="step-4" class="analysis-step">
                     <div class="step-header">
                         <h2>
@@ -348,7 +333,6 @@
                     </div>
                 </div>
 
-                <!-- Analysis Progress -->
                 <div id="analysis-progress" class="progress-container" style="display: none;">
                     <h2>Analysis in Progress</h2>
                     
@@ -381,7 +365,6 @@
             </div>
         </section>
 
-        <!-- Reports Section -->
         <section id="reports" class="content-section">
             <div class="section-header">
                 <h1>Analysis Reports</h1>
@@ -410,11 +393,9 @@
             </div>
 
             <div id="reports-container" class="reports-container">
-                <!-- Reports will be populated here -->
             </div>
         </section>
 
-        <!-- Drug Database Section -->
         <section id="drugs" class="content-section">
             <div class="section-header">
                 <h1>Drug Database</h1>
@@ -442,11 +423,9 @@
             </div>
 
             <div id="drug-database-grid" class="drug-database-grid">
-                <!-- Drug cards will be populated here -->
             </div>
         </section>
 
-        <!-- Settings Section -->
         <section id="settings" class="content-section">
             <div class="section-header">
                 <h1>Settings</h1>
@@ -508,8 +487,6 @@
         </section>
     </main>
 
-    <!-- Modals -->
-    <!-- Report Modal -->
     <div id="report-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -518,7 +495,6 @@
             </div>
             <div class="modal-body">
                 <div id="modal-report-content">
-                    <!-- Report content will be populated here -->
                 </div>
             </div>
             <div class="modal-footer">
@@ -528,7 +504,6 @@
         </div>
     </div>
 
-    <!-- Drug Modal -->
     <div id="drug-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -537,7 +512,6 @@
             </div>
             <div class="modal-body">
                 <div id="modal-drug-content">
-                    <!-- Drug content will be populated here -->
                 </div>
             </div>
             <div class="modal-footer">
@@ -546,7 +520,6 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner">
             <i class="fas fa-spinner fa-spin"></i>
@@ -554,9 +527,7 @@
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div id="toast-container" class="toast-container">
-        <!-- Toast notifications will appear here -->
     </div>
 
     <script src="script.js"></script>
