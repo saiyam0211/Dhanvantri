@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-Simple VCF Parser Module
-
-This module provides a simplified functionality to parse VCF files
-without relying on external libraries like cyvcf2.
-"""
 
 import logging
 from pathlib import Path
@@ -33,40 +27,15 @@ class SimpleVCFParser:
     """Simple parser for VCF files using Python's standard library."""
     
     def __init__(self, vcf_path: Optional[Path] = None):
-        """
-        Initialize the VCF parser.
-        
-        Args:
-            vcf_path: Optional path to the VCF file.
-        """
         self.vcf_path = vcf_path
         if vcf_path:
             logger.debug(f"Initialized Simple VCF parser for {vcf_path}")
     
     def parse_vcf(self, vcf_path: str, limit: Optional[int] = None) -> List[Variant]:
-        """
-        Parse the VCF file and extract variants.
-        
-        Args:
-            vcf_path: Path to the VCF file as a string.
-            limit: Maximum number of variants to parse. None means process all variants.
-            
-        Returns:
-            List of Variant objects.
-        """
         self.vcf_path = Path(vcf_path)
         return self.parse(limit=limit)
     
     def parse(self, limit: Optional[int] = None) -> List[Variant]:
-        """
-        Parse the VCF file and extract variants.
-        
-        Args:
-            limit: Maximum number of variants to parse. None means process all variants.
-            
-        Returns:
-            List of Variant objects.
-        """
         if not self.vcf_path:
             raise ValueError("VCF path not specified")
             
@@ -112,16 +81,6 @@ class SimpleVCFParser:
         return variants
     
     def _parse_variant_line(self, line: str, sample_ids: List[str]) -> Optional[Variant]:
-        """
-        Parse a single variant line from the VCF file.
-        
-        Args:
-            line: The line to parse.
-            sample_ids: List of sample IDs.
-            
-        Returns:
-            Variant object or None if parsing fails.
-        """
         try:
             fields = line.strip().split('\t')
             
@@ -189,12 +148,6 @@ class SimpleVCFParser:
             return None
     
     def get_sample_ids(self) -> List[str]:
-        """
-        Get the sample IDs from the VCF file.
-        
-        Returns:
-            List of sample IDs.
-        """
         sample_ids = []
         
         try:
@@ -211,15 +164,6 @@ class SimpleVCFParser:
         return sample_ids
     
     def parse_line(self, line: str) -> Optional[Variant]:
-        """
-        Parse a single line from a VCF file.
-        
-        Args:
-            line: A line from a VCF file.
-            
-        Returns:
-            Variant object or None if parsing fails.
-        """
         # Skip header lines
         if line.startswith('#'):
             return None
