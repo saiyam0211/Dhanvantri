@@ -104,10 +104,10 @@ Our platform exposes several REST API endpoints:
 
 ## 🤝 Team
 
-Saiyam Kumar: [Vibe coder](http://github.com/saiyam0211)
-Janvi Yadav: [Silent coder](http://github.com/janvi1205)
-Ronak Jain: [Owl coder](http://github.com/reachronakofficial756)
-Abhinav Jain: [Buisness boy](http://github.com/rikii08)
+Saiyam Kumar: [Vibe coder](http://github.com/saiyam0211)<br>
+Janvi Yadav: [Silent coder](http://github.com/janvi1205)<br>
+Ronak Jain: [Owl coder](http://github.com/reachronakofficial756)<br>
+Abhinav Jain: [Buisness boy](http://github.com/rikii08)<br>
 
 ## 🔮 Future Enhancements
 
