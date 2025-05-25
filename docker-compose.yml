@@ -4,11 +4,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Mount uploads and outputs for persistence
       - ./uploads:/app/uploads
       - ./outputs:/app/outputs
       - ./logs:/app/logs
-      # Mount frontend for development (optional)
       - ./frontend:/app/frontend
     environment:
       - FLASK_ENV=production
