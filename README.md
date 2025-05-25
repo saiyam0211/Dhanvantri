@@ -31,7 +31,7 @@ Dhanvantri is a cutting-edge pharmacogenomics platform that analyzes your geneti
 ## 🚀 How to Use
 
 ### Step 1: Access the Platform
-Visit our live demo at [Deployed on GCP](http://34.131.137.107:8000/)
+Visit our live demo [Deployed on GCP](http://34.131.137.107:8000/)
 
 ### Step 2: Download Test Data
 Get our sample VCF file from [this Google Drive link](https://drive.google.com/file/d/1YEvQqWT3brWGAOO6OG46VwdjVk295-AS/view?usp=sharing)
@@ -121,4 +121,4 @@ Abhinav Jain: [Buisness boy](http://github.com/rikii08)
 ---
 
 **Ready to explore personalized medicine?** 
-Visit [Deployed on GCP](http://34.131.137.107:8000/) and start your genetic analysis journey today!
+Visit [This GCP link](http://34.131.137.107:8000/) and start your genetic analysis journey today!
