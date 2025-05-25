@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""
-AI Explainer Module
-
-This module provides functionality to generate natural language explanations
-for drug-gene interactions using Cohere API.
-It creates human-readable summaries of pharmacogenomic findings using
-dynamic data from PharmGKB downloads, CPIC guidelines, and DGIdb.
-"""
 
 import json
 import logging
@@ -23,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AIExplanation:
-    """Class representing an AI-generated explanation for a drug-gene interaction."""
     interaction: DrugGeneInteraction
     summary: str
     risk_assessment: str
@@ -35,62 +26,41 @@ class AIExplanation:
             self.alternative_suggestions = []
 
 class CohereExplainer:
-    """Explainer using Cohere API with dynamic pharmacogenomic data."""
     
-    # DGIdb GraphQL endpoint
     DGIDB_GRAPHQL_ENDPOINT = "https://dgidb.org/api/graphql"
     
     def __init__(self, api_key: str, data_dir: Optional[Path] = None):
-        """
-        Initialize the Cohere explainer.
-        
-        Args:
-            api_key: API key for Cohere.
-            data_dir: Directory containing PharmGKB and CPIC data files.
-        """
         self.api_key = api_key
         self.cohere_client = cohere.ClientV2(api_key=api_key) if api_key else None
         self.data_dir = data_dir or Path("data")
         
-        # Create data directory if it doesn't exist
         self.data_dir.mkdir(exist_ok=True)
         
-        # Initialize data sources
         self.pharmgkb_data = self._load_pharmgkb_data()
         self.cpic_data = self._load_cpic_data()
         
         logger.debug("Initialized Cohere explainer with dynamic data sources")
     
     def _load_pharmgkb_data(self) -> Dict:
-        """
-        Load PharmGKB data from local files.
-        
-        Returns:
-            Dictionary of PharmGKB data.
-        """
         pharmgkb_dir = self.data_dir / "pharmgkb"
         pharmgkb_data = {}
         
         try:
-            # Check if PharmGKB data directory exists
             if not pharmgkb_dir.exists():
                 pharmgkb_dir.mkdir(exist_ok=True)
                 logger.warning(f"PharmGKB data directory created at {pharmgkb_dir}. Please download data files.")
                 return pharmgkb_data
             
-            # Load drug-gene associations
             drug_gene_file = pharmgkb_dir / "drug_gene_associations.tsv"
             if drug_gene_file.exists():
                 pharmgkb_data["drug_gene"] = self._parse_tsv_file(drug_gene_file)
                 logger.info(f"Loaded {len(pharmgkb_data['drug_gene'])} PharmGKB drug-gene associations")
             
-            # Load clinical annotations
             clinical_ann_file = pharmgkb_dir / "clinical_annotations.tsv"
             if clinical_ann_file.exists():
                 pharmgkb_data["clinical_annotations"] = self._parse_tsv_file(clinical_ann_file)
                 logger.info(f"Loaded {len(pharmgkb_data['clinical_annotations'])} PharmGKB clinical annotations")
             
-            # Load drug labels
             drug_labels_file = pharmgkb_dir / "drug_labels.tsv"
             if drug_labels_file.exists():
                 pharmgkb_data["drug_labels"] = self._parse_tsv_file(drug_labels_file)
@@ -102,30 +72,21 @@ class CohereExplainer:
         return pharmgkb_data
     
     def _load_cpic_data(self) -> Dict:
-        """
-        Load CPIC data from local files.
-        
-        Returns:
-            Dictionary of CPIC data.
-        """
         cpic_dir = self.data_dir / "cpic"
         cpic_data = {}
         
         try:
-            # Check if CPIC data directory exists
             if not cpic_dir.exists():
                 cpic_dir.mkdir(exist_ok=True)
                 logger.warning(f"CPIC data directory created at {cpic_dir}. Please download guideline files.")
                 return cpic_data
             
-            # Load CPIC guidelines
             guidelines_file = cpic_dir / "cpic_guidelines.json"
             if guidelines_file.exists():
                 with open(guidelines_file, 'r') as f:
                     cpic_data["guidelines"] = json.load(f)
                 logger.info(f"Loaded CPIC guidelines from {guidelines_file}")
             
-            # Load gene-drug pairs
             gene_drug_file = cpic_dir / "gene_drug_pairs.tsv"
             if gene_drug_file.exists():
                 cpic_data["gene_drug_pairs"] = self._parse_tsv_file(gene_drug_file)
@@ -137,15 +98,6 @@ class CohereExplainer:
         return cpic_data
     
     def _parse_tsv_file(self, file_path: Path) -> List[Dict]:
-        """
-        Parse a TSV file into a list of dictionaries.
-        
-        Args:
-            file_path: Path to the TSV file.
-            
-        Returns:
-            List of dictionaries, one per row.
-        """
         data = []
         
         try:
@@ -162,16 +114,6 @@ class CohereExplainer:
         return data
     
     def _query_dgidb(self, gene: str, drug: str) -> Dict:
-        """
-        Query DGIdb GraphQL API for drug-gene interaction information.
-        
-        Args:
-            gene: Gene symbol.
-            drug: Drug name.
-            
-        Returns:
-            Dictionary of interaction data.
-        """
         query = """
         query($gene: String!, $drug: String!) {
           genes(name: $gene) {
@@ -206,15 +148,6 @@ class CohereExplainer:
             return {"data": {"genes": []}}
     
     def explain_interactions(self, interactions: List[DrugGeneInteraction]) -> List[AIExplanation]:
-        """
-        Generate explanations for drug-gene interactions using Cohere and dynamic data sources.
-        
-        Args:
-            interactions: List of DrugGeneInteraction objects.
-            
-        Returns:
-            List of AIExplanation objects.
-        """
         if not self.api_key:
             logger.warning("No Cohere API key provided. Returning basic explanations.")
             return self._generate_basic_explanations(interactions)
@@ -224,29 +157,16 @@ class CohereExplainer:
         
         for interaction in interactions:
             try:
-                # Gather additional context from data sources
                 context = self._gather_interaction_context(interaction)
-                
-                # Generate explanation with enhanced context
                 explanation = self._explain_interaction(interaction, context)
                 explanations.append(explanation)
             except Exception as e:
                 logger.error(f"Error generating explanation for {interaction}: {e}")
-                # Fall back to basic explanation
                 explanations.append(self._generate_basic_explanation(interaction))
         
         return explanations
     
     def _gather_interaction_context(self, interaction: DrugGeneInteraction) -> Dict:
-        """
-        Gather additional context for a drug-gene interaction from data sources.
-        
-        Args:
-            interaction: DrugGeneInteraction object.
-            
-        Returns:
-            Dictionary of additional context.
-        """
         context = {
             "pharmgkb": {},
             "cpic": {},
@@ -256,7 +176,6 @@ class CohereExplainer:
         drug = interaction.drug.lower()
         gene = interaction.gene.lower()
         
-        # Get PharmGKB context
         if "drug_gene" in self.pharmgkb_data:
             for entry in self.pharmgkb_data["drug_gene"]:
                 if "Drug" in entry and "Gene" in entry:
@@ -271,7 +190,6 @@ class CohereExplainer:
                             context["pharmgkb"]["annotations"] = []
                         context["pharmgkb"]["annotations"].append(entry)
         
-        # Get CPIC context
         if "gene_drug_pairs" in self.cpic_data:
             for entry in self.cpic_data["gene_drug_pairs"]:
                 if "Drug" in entry and "Gene" in entry:
@@ -286,7 +204,6 @@ class CohereExplainer:
                     if drug_match and gene_match:
                         context["cpic"]["guideline"] = guideline
         
-        # Get DGIdb context
         dgidb_data = self._query_dgidb(gene, drug)
         if "data" in dgidb_data and "genes" in dgidb_data["data"] and dgidb_data["data"]["genes"]:
             context["dgidb"] = dgidb_data["data"]["genes"][0]
@@ -294,20 +211,8 @@ class CohereExplainer:
         return context
     
     def _explain_interaction(self, interaction: DrugGeneInteraction, context: Dict) -> AIExplanation:
-        """
-        Generate an explanation for a single drug-gene interaction with enhanced context.
-        
-        Args:
-            interaction: DrugGeneInteraction object.
-            context: Additional context from data sources.
-            
-        Returns:
-            AIExplanation object.
-        """
-        # Construct the prompt with enhanced context
         prompt = self._construct_prompt(interaction, context)
         
-        # Call Cohere API
         response = self.cohere_client.chat(
             model="command-r-plus-08-2024",
             messages=[{"role": "user", "content": prompt}],
@@ -315,7 +220,6 @@ class CohereExplainer:
             temperature=0.2
         )
         
-        # Parse the response
         try:
             text_response = response.message.content[0].text
             return self._parse_cohere_response(text_response, interaction)
@@ -325,17 +229,6 @@ class CohereExplainer:
             return self._generate_basic_explanation(interaction)
     
     def _construct_prompt(self, interaction: DrugGeneInteraction, context: Dict) -> str:
-        """
-        Construct a prompt for the Cohere API with enhanced context.
-        
-        Args:
-            interaction: DrugGeneInteraction object.
-            context: Additional context from data sources.
-            
-        Returns:
-            Prompt string.
-        """
-        # Basic interaction info
         prompt = f"""
 You are a pharmacogenomics expert. Please analyze the following drug-gene interaction and provide a detailed explanation:
 
@@ -346,7 +239,6 @@ Source: {interaction.source}
 Evidence Level: {interaction.evidence_level or 'Unknown'}
 """
         
-        # Add PharmGKB context
         if context["pharmgkb"]:
             prompt += "\n### PharmGKB Data:\n"
             
@@ -356,11 +248,10 @@ Evidence Level: {interaction.evidence_level or 'Unknown'}
                 prompt += f"PK/PD: {assoc.get('PK/PD', 'Unknown')}\n"
             
             if "annotations" in context["pharmgkb"] and context["pharmgkb"]["annotations"]:
-                ann = context["pharmgkb"]["annotations"][0]  # Take first annotation
+                ann = context["pharmgkb"]["annotations"][0]
                 prompt += f"Phenotype: {ann.get('Phenotype', 'Unknown')}\n"
                 prompt += f"Significance: {ann.get('Significance', 'Unknown')}\n"
         
-        # Add CPIC context
         if context["cpic"]:
             prompt += "\n### CPIC Data:\n"
             
@@ -374,7 +265,6 @@ Evidence Level: {interaction.evidence_level or 'Unknown'}
                 prompt += f"Recommendation: {guide.get('recommendation', 'Unknown')}\n"
                 prompt += f"Implications: {guide.get('implications', 'Unknown')}\n"
         
-        # Add DGIdb context
         if context["dgidb"] and "interactions" in context["dgidb"]:
             prompt += "\n### DGIdb Data:\n"
             for interaction in context["dgidb"]["interactions"]:
@@ -386,7 +276,6 @@ Evidence Level: {interaction.evidence_level or 'Unknown'}
                     sources = [s["sourceName"] for s in interaction["sources"]]
                     prompt += f"Sources: {', '.join(sources)}\n"
         
-        # Request format
         prompt += """
 Based on this information and established pharmacogenomic knowledge, please provide:
 
@@ -409,18 +298,7 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
         return prompt
     
     def _parse_cohere_response(self, response: str, interaction: DrugGeneInteraction) -> AIExplanation:
-        """
-        Parse the Cohere API response.
-        
-        Args:
-            response: Response string from Cohere API.
-            interaction: Original DrugGeneInteraction object.
-            
-        Returns:
-            AIExplanation object.
-        """
         try:
-            # Extract JSON from response
             json_start = response.find("{")
             json_end = response.rfind("}") + 1
             
@@ -436,7 +314,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
                     alternative_suggestions=data.get("alternative_suggestions", [])
                 )
             else:
-                # If JSON parsing fails, extract information from text
                 return self._extract_explanation_from_text(response, interaction)
                 
         except json.JSONDecodeError:
@@ -446,17 +323,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
             return self._generate_basic_explanation(interaction)
     
     def _extract_explanation_from_text(self, text: str, interaction: DrugGeneInteraction) -> AIExplanation:
-        """
-        Extract explanation components from free text.
-        
-        Args:
-            text: Text response from Cohere API.
-            interaction: Original DrugGeneInteraction object.
-            
-        Returns:
-            AIExplanation object.
-        """
-        # Simple heuristic extraction
         lines = text.split("\n")
         summary = ""
         risk_assessment = ""
@@ -490,7 +356,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
             elif current_section == "mechanism":
                 mechanism += line + " "
             elif current_section == "alternatives":
-                # Extract drug names
                 if ":" in line:
                     drug = line.split(":", 1)[1].strip()
                     alternatives.append(drug)
@@ -500,7 +365,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
                 elif line and not line.startswith(("1.", "2.", "3.", "•")):
                     alternatives.append(line)
         
-        # Clean up and provide defaults
         summary = summary.strip() or "No summary available."
         risk_assessment = risk_assessment.strip() or "No risk assessment available."
         mechanism = mechanism.strip() or "Mechanism unknown."
@@ -514,32 +378,13 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
         )
     
     def _generate_basic_explanations(self, interactions: List[DrugGeneInteraction]) -> List[AIExplanation]:
-        """
-        Generate basic explanations for all interactions.
-        
-        Args:
-            interactions: List of DrugGeneInteraction objects.
-            
-        Returns:
-            List of AIExplanation objects.
-        """
         return [self._generate_basic_explanation(interaction) for interaction in interactions]
     
     def _generate_basic_explanation(self, interaction: DrugGeneInteraction) -> AIExplanation:
-        """
-        Generate a basic explanation for a single interaction by querying external APIs.
-        
-        Args:
-            interaction: DrugGeneInteraction object.
-            
-        Returns:
-            AIExplanation object.
-        """
         drug = interaction.drug
         gene = interaction.gene
         phenotype = interaction.phenotype or "unknown phenotype"
         
-        # Try to get dynamic data from DGIdb
         try:
             dgidb_data = self._query_dgidb(gene, drug)
             dgidb_info = self._extract_dgidb_info(dgidb_data, drug, gene)
@@ -547,18 +392,13 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
             logger.warning(f"Error getting DGIdb data for {drug}-{gene}: {e}")
             dgidb_info = {}
             
-        # Try to get data from PharmGKB
         pharmgkb_info = self._get_pharmgkb_info(drug, gene)
-        
-        # Try to get data from CPIC
         cpic_info = self._get_cpic_info(drug, gene)
         
-        # Generate summary based on available data
         if dgidb_info.get("interaction_types") or pharmgkb_info.get("phenotype") or cpic_info.get("guideline"):
             interaction_types = dgidb_info.get("interaction_types", [])
             interaction_type_str = ", ".join(interaction_types) if interaction_types else "unknown mechanism"
             
-            # Use the most specific phenotype available
             specific_phenotype = (
                 cpic_info.get("phenotype") or 
                 pharmgkb_info.get("phenotype") or 
@@ -567,14 +407,12 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
             
             summary = f"The {drug}-{gene} interaction affects drug response via {interaction_type_str}. {specific_phenotype.capitalize()} has been reported."
             
-            # Use recommendation from CPIC if available, otherwise generate generic
             if cpic_info.get("recommendation"):
                 risk = cpic_info.get("recommendation")
             else:
                 evidence = pharmgkb_info.get("evidence_level") or interaction.evidence_level or "unknown"
                 risk = f"Patients with variants in {gene} may have altered response to {drug}. Based on {evidence} evidence, monitoring is advised."
             
-            # Generate mechanism based on available data
             if interaction_types:
                 mechanism = f"{gene} is involved in the {interaction_type_str} of {drug}, which may affect drug levels or response."
             elif pharmgkb_info.get("pk_status") == "yes":
@@ -582,11 +420,9 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
             else:
                 mechanism = f"{gene} may influence response to {drug} through mechanisms that require further study."
             
-            # Get alternative suggestions if available from CPIC
             alternatives = cpic_info.get("alternatives", [])
             
         else:
-            # Fallback to generic explanation if no specific data is available
             summary = f"The {drug}-{gene} interaction may affect drug response. {phenotype.capitalize()} has been reported."
             risk = f"Patients with variants in {gene} may have altered response to {drug}. Monitoring is advised."
             mechanism = f"{gene} is involved in the metabolism or transport of {drug}, which may affect drug levels or response."
@@ -601,17 +437,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
         )
         
     def _extract_dgidb_info(self, dgidb_data: Dict, drug: str, gene: str) -> Dict:
-        """
-        Extract relevant information from DGIdb response.
-        
-        Args:
-            dgidb_data: Response from DGIdb API.
-            drug: Drug name.
-            gene: Gene symbol.
-            
-        Returns:
-            Dictionary with extracted information.
-        """
         info = {
             "interaction_types": [],
             "sources": [],
@@ -625,23 +450,18 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
                     if gene_data and "interactions" in gene_data:
                         for interaction in gene_data["interactions"]:
                             if interaction.get("drugName", "").lower() == drug.lower():
-                                # Get interaction types
                                 if "interactionTypes" in interaction and interaction["interactionTypes"]:
                                     info["interaction_types"].extend(interaction["interactionTypes"])
                                 
-                                # Get sources
                                 if "sources" in interaction:
                                     info["sources"].extend([s["sourceName"] for s in interaction["sources"]])
                                 
-                                # Get PMIDs
                                 if "pmids" in interaction and interaction["pmids"]:
                                     info["pmids"].extend(interaction["pmids"])
                                 
-                                # Get score
                                 if "interactionScore" in interaction:
                                     info["score"] = interaction["interactionScore"]
             
-            # Remove duplicates
             info["interaction_types"] = list(set(info["interaction_types"]))
             info["sources"] = list(set(info["sources"]))
             info["pmids"] = list(set(info["pmids"]))
@@ -652,16 +472,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
         return info
     
     def _get_pharmgkb_info(self, drug: str, gene: str) -> Dict:
-        """
-        Get information about a drug-gene pair from PharmGKB data.
-        
-        Args:
-            drug: Drug name.
-            gene: Gene symbol.
-            
-        Returns:
-            Dictionary with PharmGKB information.
-        """
         info = {
             "phenotype": None,
             "evidence_level": None,
@@ -670,7 +480,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
         }
         
         try:
-            # Check drug-gene associations
             if "drug_gene" in self.pharmgkb_data:
                 for row in self.pharmgkb_data["drug_gene"]:
                     drug_name = row.get("Entity1_name", "").lower()
@@ -684,7 +493,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
                             info["pmids"].extend(row.get("PMIDs").split(","))
                         break
             
-            # Check clinical annotations for more detailed information
             if "clinical_annotations" in self.pharmgkb_data:
                 for row in self.pharmgkb_data["clinical_annotations"]:
                     if row.get("Drug", "").lower() == drug.lower() and row.get("Gene", "") == gene:
@@ -695,7 +503,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
                         if row.get("PMID"):
                             info["pmids"].append(row.get("PMID"))
             
-            # Remove duplicate PMIDs
             info["pmids"] = list(set(info["pmids"]))
             
         except Exception as e:
@@ -704,16 +511,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
         return info
     
     def _get_cpic_info(self, drug: str, gene: str) -> Dict:
-        """
-        Get information about a drug-gene pair from CPIC data.
-        
-        Args:
-            drug: Drug name.
-            gene: Gene symbol.
-            
-        Returns:
-            Dictionary with CPIC information.
-        """
         info = {
             "level": None,
             "guideline": None,
@@ -723,7 +520,6 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
         }
         
         try:
-            # Check gene-drug pairs
             guideline_url = None
             if "gene_drug_pairs" in self.cpic_data:
                 for row in self.cpic_data["gene_drug_pairs"]:
@@ -732,14 +528,12 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
                         guideline_url = row.get("Guideline")
                         break
             
-            # If we found a guideline URL, look for more detailed information
             if guideline_url and "guidelines" in self.cpic_data:
                 for guideline in self.cpic_data["guidelines"]:
                     if guideline.get("guidelineUrl") == guideline_url:
                         info["guideline"] = guideline.get("guidelineName")
                         info["recommendation"] = guideline.get("recommendation")
                         
-                        # Try to extract phenotype from guideline name
                         if guideline.get("guidelineName"):
                             name = guideline.get("guidelineName")
                             if "and" in name and "for" in name:
@@ -747,21 +541,16 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
                                 if len(parts) > 1:
                                     info["phenotype"] = parts[1].strip()
                         
-                        # Look for alternative drugs in the recommendation
                         if info["recommendation"]:
-                            # Simple heuristic to find alternative drugs
                             alternatives = []
                             rec = info["recommendation"].lower()
                             if "alternative" in rec and ("drug" in rec or "medication" in rec or "agent" in rec):
-                                # Try to extract drug names after "alternative"
                                 alt_part = rec.split("alternative")[1]
-                                # This is a simple approach - in a real system, you'd use NLP
-                                # to extract drug names more accurately
                                 for word in alt_part.split():
                                     word = word.strip(",.;:()")
                                     if word and len(word) > 3 and word not in ["drug", "drugs", "medication", "medications", "agent", "agents", "such", "like", "include", "including"]:
                                         alternatives.append(word)
-                            info["alternatives"] = alternatives[:3]  # Limit to 3 alternatives
+                            info["alternatives"] = alternatives[:3]
                         
                         break
             
@@ -771,33 +560,14 @@ Ensure your response is evidence-based, clinically relevant, and focused on phar
         return info
 
 class AIExplainer:
-    """Factory class for AI explainers."""
     
     def __init__(self, api_key: Optional[str] = None, data_dir: Optional[Path] = None):
-        """
-        Initialize the AI explainer.
-        
-        Args:
-            api_key: API key for the AI provider.
-            data_dir: Directory containing PharmGKB and CPIC data files.
-        """
         self.api_key = api_key
         self.data_dir = data_dir or Path("data")
         
-        # Create the Cohere explainer
         self.explainer = CohereExplainer(api_key, self.data_dir)
     
     def explain_interactions(self, interactions) -> List[AIExplanation]:
-        """
-        Generate explanations for drug-gene interactions.
-        
-        Args:
-            interactions: Either a List of DrugGeneInteraction objects or a Dict mapping drug names to lists of interactions.
-            
-        Returns:
-            List of AIExplanation objects.
-        """
-        # Convert dictionary format to flat list if needed
         if isinstance(interactions, dict):
             logger.info(f"Converting dictionary of interactions to flat list")
             flat_interactions = []
