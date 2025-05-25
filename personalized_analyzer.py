@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""
-Personalized Drug Analyzer Module
-
-This module creates personalized drug analysis reports by combining all relevant
-genetic information for a specific person and generating comprehensive AI-powered
-recommendations per drug using a streamlined pipeline:
-1. Database analysis (PharmGKB, CPIC)
-2. Cohere AI analysis and report generation
-"""
 
 import json
 import logging
@@ -40,19 +31,8 @@ class PersonalizedDrugReport:
     monitoring_recommendations: str
 
 class PersonalizedAnalyzer:
-    """
-    Generates personalized drug analysis reports using a multi-AI pipeline:
-    Database → BioMedLM → Cohere → Final Report
-    """
     
     def __init__(self, drug_mapper: DrugMapper, use_cohere: bool = True):
-        """
-        Initialize the PersonalizedAnalyzer with enhanced multi-AI pipeline.
-        
-        Args:
-            drug_mapper: DrugMapper instance for accessing pharmacogenomic data.
-            use_cohere: Whether to use Cohere AI for final analysis.
-        """
         self.drug_mapper = drug_mapper
         self.use_cohere = use_cohere
         
@@ -85,16 +65,6 @@ class PersonalizedAnalyzer:
         drugs: List[str], 
         annotated_variants: List[AnnotatedVariant]
     ) -> Dict[str, PersonalizedDrugReport]:
-        """
-        Generate personalized drug reports for multiple drugs using multi-AI pipeline.
-        
-        Args:
-            drugs: List of drug names to analyze.
-            annotated_variants: Patient's annotated genetic variants.
-            
-        Returns:
-            Dictionary mapping drug names to PersonalizedDrugReport objects.
-        """
         reports = {}
         
         try:
@@ -114,22 +84,6 @@ class PersonalizedAnalyzer:
         drug: str, 
         annotated_variants: List[AnnotatedVariant]
     ) -> PersonalizedDrugReport:
-        """
-        Generate a comprehensive personalized report for a single drug using multi-AI pipeline.
-        
-        Pipeline:
-        1. Extract relevant genes from variants
-        2. Get PharmGKB/CPIC database interactions
-        3. Run BioMedLM biomedical analysis (if enabled)
-        4. Generate final Cohere analysis incorporating all previous steps
-        
-        Args:
-            drug: Drug name to analyze.
-            annotated_variants: Patient's annotated genetic variants.
-            
-        Returns:
-            PersonalizedDrugReport object.
-        """
         logger.info(f"📊 Step 1: Extracting relevant genes for {drug}")
         # Extract relevant genes from variants
         relevant_genes = self._extract_relevant_genes(annotated_variants)
