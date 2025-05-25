@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-VCF Preprocessing and Parallel Annotation
-
-This script preprocesses VCF files by filtering low-confidence variants and
-normalizing multi-allelic sites, then performs parallel annotation with SnpEff.
-"""
 
 import argparse
 import logging
@@ -102,18 +96,6 @@ def check_dependencies():
     return True
 
 def preprocess_vcf(input_vcf, output_vcf, min_depth=10, bed_file=None):
-    """
-    Preprocess VCF file by filtering low-confidence variants and normalizing multi-allelic sites.
-    
-    Args:
-        input_vcf: Path to input VCF file
-        output_vcf: Path to output filtered VCF file
-        min_depth: Minimum read depth for variant filtering
-        bed_file: Optional BED file to restrict to coding regions
-        
-    Returns:
-        Path to preprocessed VCF file
-    """
     logger.info(f"Preprocessing VCF file: {input_vcf}")
     start_time = time.time()
     
@@ -158,16 +140,6 @@ def preprocess_vcf(input_vcf, output_vcf, min_depth=10, bed_file=None):
     return output_vcf
 
 def split_vcf_by_chromosome(input_vcf, output_dir):
-    """
-    Split VCF file by chromosome.
-    
-    Args:
-        input_vcf: Path to input VCF file
-        output_dir: Directory to store split VCF files
-        
-    Returns:
-        List of paths to split VCF files
-    """
     logger.info(f"Splitting VCF file by chromosome: {input_vcf}")
     start_time = time.time()
     
@@ -204,17 +176,6 @@ def split_vcf_by_chromosome(input_vcf, output_dir):
     return split_files
 
 def split_vcf_by_lines(input_vcf, output_dir, num_parts):
-    """
-    Split VCF file by lines into equal parts.
-    
-    Args:
-        input_vcf: Path to input VCF file
-        output_dir: Directory to store split VCF files
-        num_parts: Number of parts to split into
-        
-    Returns:
-        List of paths to split VCF files
-    """
     logger.info(f"Splitting VCF file into {num_parts} parts: {input_vcf}")
     start_time = time.time()
     
@@ -278,19 +239,6 @@ def split_vcf_by_lines(input_vcf, output_dir, num_parts):
     return split_files
 
 def annotate_vcf(input_vcf, output_vcf, genome, snpeff_path, memory):
-    """
-    Annotate VCF file with SnpEff.
-    
-    Args:
-        input_vcf: Path to input VCF file
-        output_vcf: Path to output annotated VCF file
-        genome: Genome version for SnpEff
-        snpeff_path: Path to SnpEff JAR file
-        memory: Memory allocation for Java
-        
-    Returns:
-        Path to annotated VCF file
-    """
     logger.info(f"Annotating VCF file: {input_vcf}")
     start_time = time.time()
     
@@ -316,20 +264,6 @@ def annotate_vcf(input_vcf, output_vcf, genome, snpeff_path, memory):
     return output_vcf
 
 def annotate_in_parallel(split_files, output_dir, genome, snpeff_path, memory, threads):
-    """
-    Annotate split VCF files in parallel.
-    
-    Args:
-        split_files: List of paths to split VCF files
-        output_dir: Directory to store annotated VCF files
-        genome: Genome version for SnpEff
-        snpeff_path: Path to SnpEff JAR file
-        memory: Memory allocation for Java
-        threads: Number of parallel processes
-        
-    Returns:
-        List of paths to annotated VCF files
-    """
     logger.info(f"Annotating {len(split_files)} VCF files in parallel using {threads} threads")
     start_time = time.time()
     
@@ -361,16 +295,6 @@ def annotate_in_parallel(split_files, output_dir, genome, snpeff_path, memory, t
     return annotated_files
 
 def merge_vcf_files(input_files, output_file):
-    """
-    Merge multiple VCF files into one.
-    
-    Args:
-        input_files: List of paths to input VCF files
-        output_file: Path to output merged VCF file
-        
-    Returns:
-        Path to merged VCF file
-    """
     logger.info(f"Merging {len(input_files)} VCF files")
     start_time = time.time()
     
