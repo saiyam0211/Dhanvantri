@@ -1,142 +1,124 @@
-# Genetic Analysis Tool
+# Dhanvantri - Personalized Pharmacogenomics Analysis Platform
 
-A comprehensive tool for analyzing genetic variants from VCF files and identifying drug interactions based on pharmacogenomic data.
+> **Hackathon Project** - A comprehensive web-based platform for pharmacogenomics analysis that processes genetic data and provides personalized drug recommendations.
 
-## Features
+## 🌟 Live Demo
 
-- Process VCF files to identify genetic variants
-- Annotate variants using SnpEff
-- Map variants to drugs using PharmGKB and CPIC data
-- **NEW: PharmGKB API integration for real-time drug-gene interaction data**
-- Generate interactive HTML reports for drug-gene interactions
-- Support for batch processing of large VCF files
-- Docker container for easy deployment
+**Try it now:** [Deployed on GCP](http://34.131.137.107:8000/)
 
-## Quick Start with Docker
+Experience our platform with real genetic data! No setup required - just visit the link above and start exploring.
 
-The easiest way to run the tool is using the Docker container:
+## 🧬 Test Data
 
-```bash
-# Build the Docker image
-docker build -t genetic-analysis .
+We've provided a real DNA VCF file for testing purposes:
 
-# Run the tool with a sample VCF file and drug list
-docker run -v /path/to/your/data:/app/data -v /path/to/output:/app/output genetic-analysis --vcf /app/data/sample.vcf --drugs "warfarin,clopidogrel" --output /app/output/report.html
+**Download Test VCF File:** [Sample DNA Data (50K variants)](https://drive.google.com/file/d/1YEvQqWT3brWGAOO6OG46VwdjVk295-AS/view?usp=sharing)
+
+> **Note:** This is a real DNA file from an individual containing 50,000 genetic variants - a subset of a complete genomic profile. Perfect for testing our analysis capabilities!
+
+## 🎯 What is Dhanvantri?
+
+Dhanvantri is a cutting-edge pharmacogenomics platform that analyzes your genetic makeup to provide personalized medication recommendations. By examining genetic variants in your DNA, we can predict how you might respond to different medications, helping healthcare providers make more informed treatment decisions.
+
+### Key Features
+
+- **🧬 Genetic Analysis**: Upload VCF files containing genetic variant data
+- **💊 Drug Database**: Comprehensive database of 100+ medications across multiple categories
+- **🤖 AI-Powered Insights**: Advanced AI analysis using multiple language models
+- **📊 Interactive Dashboard**: Real-time progress tracking and beautiful visualizations
+- **📋 Detailed Reports**: Comprehensive, patient-friendly analysis reports
+
+## 🚀 How to Use
+
+### Step 1: Access the Platform
+Visit our live demo at [Deployed on GCP](http://34.131.137.107:8000/)
+
+### Step 2: Download Test Data
+Get our sample VCF file from [this Google Drive link](https://drive.google.com/file/d/1YEvQqWT3brWGAOO6OG46VwdjVk295-AS/view?usp=sharing)
+
+### Step 3: Start New Analysis
+1. Click "New Analysis" on the dashboard
+2. Enter patient information (you can use test data)
+3. Upload the downloaded VCF file
+4. Select medications from our drug database or manually enter your own!
+5. Configure analysis options ( Don't Change any! )
+6. Start the analysis and watch real-time progress
+7. You will be redirected to Reports Page.
+8. Click on "View Full Report" on your analysis.
+
+### Step 4: View Results
+- Monitor analysis progress in real-time
+- Access detailed pharmacogenomics reports
+- Download comprehensive analysis summaries
+
+## 🏗️ Technical Architecture
+
+```
+Frontend (HTML/CSS/JS) → Flask API → Python Analysis Engine
+                                  ↓
+                              AI Services (Cohere)
+                                  ↓
+                              Report Generation
 ```
 
-On first run, the container will automatically download the required SnpEff database.
+### Core Components
 
-## Docker Volume Mounts
+- **Frontend**: Modern, responsive web interface
+- **Backend**: Flask-based REST API
+- **Analysis Engine**: Python-based genetic variant processor
+- **AI Integration**: AI models for enhanced analysis
+- **Report Generator**: Automated HTML report creation
 
-The Docker container uses two volume mounts:
+## 🧪 Supported Drug Categories
 
-1. `/app/data`: Mount your local data directory containing VCF files and reference data
-2. `/app/output`: Mount a local directory to save the generated reports
+- **Any**
 
-Example:
-```bash
-docker run -v $(pwd)/samples:/app/data -v $(pwd)/results:/app/output genetic-analysis --vcf /app/data/sample.vcf --drugs "ibuprofen,omeprazole" --output /app/output/report.html
-```
+## 📊 Sample Analysis Results
 
-## Command-Line Options
+Our platform provides:
 
-```
---vcf VCF             Path to the VCF file
---drugs DRUGS         Comma-separated list of prescribed drugs
---output OUTPUT       Output file path (default: report.html)
---format {html,pdf}   Output format (default: html)
---api-keys API_KEYS   Path to JSON file containing API keys
---data-dir DATA_DIR   Path to directory containing PharmGKB and CPIC data
---verbose             Enable verbose logging
---limit LIMIT         Limit the number of variants to process
-```
+- **Risk Assessment**: High/Medium/Low risk classifications
+- **Dosing Recommendations**: Personalized dosing guidelines
+- **Alternative Medications**: Safer drug alternatives when needed
+- **Scientific References**: Evidence-based recommendations
+- **Patient-Friendly Summaries**: Easy-to-understand explanations
 
-## API Keys
+## 🔗 API Endpoints
 
-The tool supports integration with several external APIs. Create an `api_keys.json` file with your API keys:
+Our platform exposes several REST API endpoints:
 
-```json
-{
-  "vep_api_key": "your_vep_api_key_here",
-  "pharmgkb_api_key": "your_pharmgkb_api_key_here",
-  "cpic_api_key": "your_cpic_api_key_here",
-  "dgidb_api_key": "your_dgidb_api_key_here",
-  "gemini_api_key": "your_gemini_api_key_here",
-  "openai_api_key": "your_openai_api_key_here"
-}
-```
+- `GET /api/health` - System health check
+- `POST /api/upload-vcf` - Upload genetic data files
+- `GET /api/drugs` - Retrieve drug database
+- `POST /api/start-analysis` - Initiate analysis
+- `GET /api/analysis-status/<job_id>` - Check progress
+- `GET /api/reports` - List all reports
+- `GET /api/report/<job_id>/download` - Download results
 
-## PharmGKB API Integration
+## 🌐 Browser Compatibility
 
-The tool now includes integration with the PharmGKB API to provide real-time drug-gene interaction data. This integration offers several benefits:
+- Chrome (recommended)
+- Firefox
+- Safari 
+- Edge
 
-1. **Up-to-date information**: Access the latest drug-gene interaction data directly from PharmGKB
-2. **Expanded search**: When no interactions are found in local data, the API can search for additional drug-related genes
-3. **Comprehensive coverage**: Combines local data with API data for the most complete set of interactions
+## 🤝 Team
 
-To use the PharmGKB API integration:
+Saiyam Kumar: [Vibe coder](http://github.com/saiyam0211)
+Janvi Yadav: [Silent coder](http://github.com/janvi1205)
+Ronak Jain: [Owl coder](http://github.com/reachronakofficial756)
+Abhinav Jain: [Buisness boy](http://github.com/rikii08)
 
-1. Obtain a PharmGKB API key from [PharmGKB](https://www.pharmgkb.org/)
-2. Add your API key to the `api_keys.json` file
-3. The tool will automatically use both local data and the API when mapping drugs to genes
+## 🔮 Future Enhancements
 
-## Data Sources
+- Integration with more genetic databases
+- Enhanced AI analysis capabilities
+- Use of BioMedLM for more accurate reports
+- Mobile application development
+- Clinical decision support tools
+- Clinical & Govt. Approval
+- 
+---
 
-The tool integrates data from multiple pharmacogenomic databases:
-
-- **PharmGKB**: Pharmacogenomics Knowledge Base
-  - Local data files downloaded from PharmGKB
-  - Real-time API integration for up-to-date drug-gene interactions
-- **CPIC**: Clinical Pharmacogenetics Implementation Consortium
-- **DGIdb**: Drug Gene Interaction Database
-- **Custom**: User-defined interactions in `custom_interactions.json`
-
-## Installation (Without Docker)
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/genetic-analysis.git
-cd genetic-analysis
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Download required data files
-python download_data.py
-```
-
-## Usage (Without Docker)
-
-```bash
-python main.py --vcf path/to/your/file.vcf --drugs "drug1,drug2,drug3" --output report.html
-```
-
-## Output
-
-The tool generates an interactive HTML report (or PDF) containing:
-
-- Summary of analyzed variants
-- Drug-gene interactions with evidence levels
-- Phenotype information and clinical recommendations
-- AI-powered explanations of the interactions
-- References to scientific literature
-
-## Custom Interactions
-
-You can define custom drug-gene interactions by creating a `custom_interactions.json` file in the data directory:
-
-```json
-[
-  {
-    "drug": "aspirin",
-    "gene": "PTGS1",
-    "phenotype": "Reduced antiplatelet effect",
-    "evidence_level": "High",
-    "recommendation": "Consider alternative antiplatelet therapy"
-  }
-]
-```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Ready to explore personalized medicine?** 
+Visit [Deployed on GCP](http://34.131.137.107:8000/) and start your genetic analysis journey today!
