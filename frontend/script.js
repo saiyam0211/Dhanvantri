@@ -122,19 +122,60 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initializeApp() {
+    console.log('🚀 Initializing PharmGenome app...');
+    
     setupEventListeners();
     setupCustomDrugInput();
     await loadDrugsFromAPI();
     await loadReportsFromAPI();
-    updateDashboard();
+    
+    // Check if user is currently in analysis section
+    const currentSection = document.querySelector('.content-section.active');
+    const isInAnalysis = currentSection && currentSection.id === 'analysis';
+    console.log('🔍 Current section:', currentSection?.id, 'Is in analysis:', isInAnalysis);
+    
+    // Check if we're in the middle of an analysis (progress is showing)
+    const analysisProgress = document.getElementById('analysis-progress');
+    const isAnalysisInProgress = analysisProgress && analysisProgress.style.display !== 'none';
+    console.log('🔍 Analysis in progress:', isAnalysisInProgress);
+    
+    // Check if there's a modal open (analysis complete modal)
+    const activeModal = document.querySelector('.modal.active');
+    const isModalOpen = activeModal !== null;
+    console.log('🔍 Modal open:', isModalOpen, activeModal?.id);
+    
+    // Only clear analysis state if we're NOT in the analysis section AND no analysis is in progress AND no modal is open
+    if (!isInAnalysis && !isAnalysisInProgress && !isModalOpen) {
+        console.log('🧹 Clearing analysis state since not in analysis section and no analysis in progress');
+        clearAnalysisState();
+    } else {
+        console.log('🔒 Preserving analysis state - in analysis section, analysis in progress, or modal open');
+    }
+    
+    // Don't auto-redirect if:
+    // 1. User is in analysis section
+    // 2. Analysis is in progress 
+    // 3. A modal is open (like analysis complete modal)
+    if (isInAnalysis || isAnalysisInProgress || isModalOpen) {
+        console.log('🔒 Preserving current state - not redirecting');
+        updateDashboardStats();
+    } else if (!currentSection || currentSection.id !== 'dashboard') {
+        console.log('🏠 Defaulting to dashboard on page load');
+        switchSection('dashboard');
+    } else {
+        console.log('📊 Already on dashboard, updating stats');
+        updateDashboardStats();
+    }
+    
     populateDrugDatabase();
     loadSettings();
+    console.log('✅ App initialization complete');
 }
 
 // API Functions
 async function apiCall(endpoint, options = {}) {
     try {
-        const url = ${AppState.apiEndpoint}/api${endpoint};
+        const url = `${AppState.apiEndpoint}/api${endpoint}`;
         const response = await fetch(url, {
             headers: {
                 'Content-Type': 'application/json',
@@ -145,12 +186,12 @@ async function apiCall(endpoint, options = {}) {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || HTTP ${response.status});
+            throw new Error(error.error || `HTTP ${response.status}`);
         }
         
         return await response.json();
     } catch (error) {
-        console.error(API call failed: ${endpoint}, error);
+        console.error(`API call failed: ${endpoint}`, error);
         throw error;
     }
 }
@@ -176,16 +217,21 @@ async function loadReportsFromAPI() {
         AppState.reports = response.reports.map(apiReport => ({
             id: apiReport.id,
             jobId: apiReport.id, // Use the API report ID as jobId
-            title: Analysis for ${apiReport.patient_info?.name || apiReport.patient_info?.id || 'Unknown Patient'},
+            title: `Analysis for ${apiReport.patient_info?.name || apiReport.patient_info?.id || 'Unknown Patient'}`,
             date: apiReport.created_at,
             status: apiReport.status,
-            summary: Pharmacogenomics analysis for ${apiReport.drugs?.length || 0} drug(s),
+            summary: `Pharmacogenomics analysis for ${apiReport.drugs?.length || 0} drug(s)`,
             patientId: apiReport.patient_info?.id || 'Unknown',
             drugs: apiReport.drugs || [],
             variants: apiReport.result?.analysis_summary?.variants_processed || 0,
             interactions: apiReport.result?.analysis_summary?.interactions_found || 0,
             highRiskInteractions: apiReport.result?.analysis_summary?.high_risk_interactions || 0
         }));
+        
+        // Sort reports by date in descending order (latest first)
+        AppState.reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+        console.log('📊 Reports loaded and sorted by date (latest first):', AppState.reports.length);
+        
     } catch (error) {
         console.error('Failed to load reports:', error);
         showToast('Failed to load reports', 'error');
@@ -201,10 +247,10 @@ async function uploadVcfFile(file) {
         
         // Show progress for large files
         if (file.size > 100 * 1024 * 1024) { // > 100MB
-            showToast(Uploading large file (${formatFileSize(file.size)}). This may take several minutes..., 'info');
+            showToast(`Uploading large file (${formatFileSize(file.size)}). This may take several minutes...`, 'info');
         }
         
-        const response = await fetch(${AppState.apiEndpoint}/api/upload-vcf, {
+        const response = await fetch(`${AppState.apiEndpoint}/api/upload-vcf`, {
             method: 'POST',
             body: formData,
             // Add timeout for large files (10 minutes)
@@ -223,7 +269,7 @@ async function uploadVcfFile(file) {
                 errorMessage = errorData.error || errorMessage;
             } catch (parseError) {
                 console.error('Failed to parse error response:', parseError);
-                errorMessage = Server error: ${response.status} ${response.statusText};
+                errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
             throw new Error(errorMessage);
         }
@@ -245,352 +291,34 @@ async function uploadVcfFile(file) {
     }
 }
 
-async function startAnalysisAPI() {
-    try {
-        const analysisData = {
-            vcf_file: AppState.vcfFile.filepath,
-            drugs: AppState.selectedDrugs.map(drug => drug.id),
-            drug_details: AppState.selectedDrugs.map(drug => ({
-                id: drug.id,
-                name: drug.name,
-                isCustom: drug.isCustom || false
-            })),
-            patient_info: AppState.patientInfo,
-            config: AppState.analysisConfig
-        };
-        
-        const response = await apiCall('/start-analysis', {
-            method: 'POST',
-            body: JSON.stringify(analysisData)
-        });
-        
-        return response;
-    } catch (error) {
-        console.error('Failed to start analysis:', error);
-        throw error;
-    }
-}
-
-async function checkAnalysisStatus(jobId) {
-    try {
-        return await apiCall(/analysis-status/${jobId});
-    } catch (error) {
-        console.error('Failed to check analysis status:', error);
-        throw error;
-    }
-}
-
-function setupEventListeners() {
-    // Navigation
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', handleNavigation);
-    });
-
-    // VCF File Upload
-    const vcfFileInput = document.getElementById('vcf-file');
-    const vcfUploadArea = document.getElementById('vcf-upload-area');
-    
-    if (vcfFileInput) {
-        vcfFileInput.addEventListener('change', handleVcfFileSelect);
-    }
-    
-    if (vcfUploadArea) {
-        vcfUploadArea.addEventListener('dragover', handleDragOver);
-        vcfUploadArea.addEventListener('drop', handleDrop);
-        vcfUploadArea.addEventListener('click', () => vcfFileInput?.click());
-    }
-
-    // Drug Search and Selection
-    const drugSearch = document.getElementById('drug-search');
-    if (drugSearch) {
-        drugSearch.addEventListener('input', handleDrugSearch);
-    }
-
-    // Category buttons
-    document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.addEventListener('click', handleCategoryFilter);
-    });
-
-    // Form inputs
-    const patientIdInput = document.getElementById('patient-id');
-    const patientNameInput = document.getElementById('patient-name');
-    const analysisNotesInput = document.getElementById('analysis-notes');
-
-    if (patientIdInput) {
-        patientIdInput.addEventListener('input', (e) => {
-            AppState.patientInfo.id = e.target.value;
-        });
-    }
-
-    if (patientNameInput) {
-        patientNameInput.addEventListener('input', (e) => {
-            AppState.patientInfo.name = e.target.value;
-        });
-    }
-
-    if (analysisNotesInput) {
-        analysisNotesInput.addEventListener('input', (e) => {
-            AppState.patientInfo.notes = e.target.value;
-        });
-    }
-
-    // Configuration checkboxes
-    document.querySelectorAll('#step-4 input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', handleConfigChange);
-    });
-
-    // Reports search and filter
-    const reportSearch = document.getElementById('report-search');
-    const reportFilter = document.getElementById('report-filter');
-
-    if (reportSearch) {
-        reportSearch.addEventListener('input', handleReportSearch);
-    }
-
-    if (reportFilter) {
-        reportFilter.addEventListener('change', handleReportFilter);
-    }
-
-    // View options
-    document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.addEventListener('click', handleViewChange);
-    });
-
-    // Drug database search and filters
-    const drugDbSearch = document.getElementById('drug-db-search');
-    const drugCategoryFilter = document.getElementById('drug-category-filter');
-    const drugEvidenceFilter = document.getElementById('drug-evidence-filter');
-
-    if (drugDbSearch) {
-        drugDbSearch.addEventListener('input', handleDrugDbSearch);
-    }
-
-    if (drugCategoryFilter) {
-        drugCategoryFilter.addEventListener('change', handleDrugDbFilter);
-    }
-
-    if (drugEvidenceFilter) {
-        drugEvidenceFilter.addEventListener('change', handleDrugDbFilter);
-    }
-
-    // Settings
-    document.querySelectorAll('#settings input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', handleSettingsChange);
-    });
-
-    const apiEndpointInput = document.getElementById('api-endpoint');
-    if (apiEndpointInput) {
-        apiEndpointInput.addEventListener('change', (e) => {
-            AppState.apiEndpoint = e.target.value;
-            saveSettings();
-        });
-    }
-
-    // Modal close events
-    document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const modal = e.target.closest('.modal');
-            if (modal) {
-                closeModal(modal.id);
-            }
-        });
-    });
-
-    // Click outside modal to close
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal(modal.id);
-            }
-        });
-    });
-}
-
-// Navigation Functions
-function handleNavigation(e) {
-    e.preventDefault();
-    const section = e.target.closest('.nav-link').dataset.section;
-    switchSection(section);
-}
-
-function switchSection(sectionName) {
-    // Update navigation
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
-    
-    const activeLink = document.querySelector([data-section="${sectionName}"]);
-    if (activeLink) {
-        activeLink.classList.add('active');
-    }
-
-    // Update content
-    document.querySelectorAll('.content-section').forEach(section => {
-        section.classList.remove('active');
-    });
-
-    const targetSection = document.getElementById(sectionName);
-    if (targetSection) {
-        targetSection.classList.add('active');
-        AppState.currentSection = sectionName;
-    }
-
-    // Load section-specific data
-    switch (sectionName) {
-        case 'dashboard':
-            updateDashboard();
-            break;
-        case 'analysis':
-            // Don't automatically reset - preserve current progress
-            // Only reset if explicitly requested or if starting fresh
-            if (AppState.currentStep === 0 || !AppState.currentStep) {
-                resetAnalysisForm();
-            } else {
-                // Restore to current step
-                showStep(AppState.currentStep);
-            }
-            break;
-        case 'reports':
-            loadReports();
-            break;
-        case 'drugs':
-            populateDrugDatabase();
-            break;
-        case 'settings':
-            loadSettings();
-            break;
-    }
-}
-
-// Analysis Step Functions
-function startNewAnalysis() {
-    // Explicitly reset the form and start fresh
-    resetAnalysisForm();
-    switchSection('analysis');
-}
-
-function nextStep(stepNumber) {
-    if (validateCurrentStep()) {
-        showStep(stepNumber);
-    }
-}
-
-function previousStep(stepNumber) {
-    showStep(stepNumber);
-}
-
-function showStep(stepNumber) {
-    document.querySelectorAll('.analysis-step').forEach(step => {
-        step.classList.remove('active');
-    });
-
-    const targetStep = document.getElementById(step-${stepNumber});
-    if (targetStep) {
-        targetStep.classList.add('active');
-        AppState.currentStep = stepNumber;
-    }
-}
-
-function validateCurrentStep() {
-    switch (AppState.currentStep) {
-        case 1:
-            return validatePatientInfo();
-        case 2:
-            return validateVcfFile();
-        case 3:
-            return validateDrugSelection();
-        case 4:
-            return true; // Configuration is optional
-        default:
-            return true;
-    }
-}
-
-function validatePatientInfo() {
-    const patientId = document.getElementById('patient-id').value.trim();
-    if (!patientId) {
-        showToast('Please enter a patient ID', 'error');
-        return false;
-    }
-    return true;
-}
-
-function validateVcfFile() {
-    if (!AppState.vcfFile) {
-        showToast('Please upload a VCF file', 'error');
-        return false;
-    }
-    return true;
-}
-
-function validateDrugSelection() {
-    if (AppState.selectedDrugs.length === 0) {
-        showToast('Please select at least one drug for analysis', 'error');
-        return false;
-    }
-    return true;
-}
-
-function resetAnalysisForm() {
-    AppState.currentStep = 1;
-    AppState.vcfFile = null;
-    AppState.selectedDrugs = [];
-    
-    showStep(1);
-    
-    // Reset form fields
-    document.getElementById('patient-id').value = '';
-    document.getElementById('patient-name').value = '';
-    document.getElementById('analysis-notes').value = '';
-    
-    // Reset custom drug input
-    const customDrugInput = document.getElementById('custom-drug-name');
-    if (customDrugInput) {
-        customDrugInput.value = '';
-    }
-    
-    // Reset file upload
-    const vcfFileInfo = document.getElementById('vcf-file-info');
-    if (vcfFileInfo) {
-        vcfFileInfo.style.display = 'none';
-    }
-    
-    // Reset drug selection
-    updateSelectedDrugs();
-    populateAvailableDrugs();
-}
-
-// File Upload Functions
-function handleVcfFileSelect(e) {
-    const file = e.target.files[0];
-    if (file) {
-        processVcfFile(file);
-    }
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-    e.target.closest('.upload-area').classList.add('dragover');
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    e.target.closest('.upload-area').classList.remove('dragover');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        processVcfFile(files[0]);
-    }
-}
-
 async function processVcfFile(file) {
     try {
+        console.log('📁 Processing VCF file:', file.name);
+        console.log('🔍 Current section at start:', AppState.currentSection);
+        console.log('🔍 Current step at start:', AppState.currentStep);
+        
+        // Prevent any page navigation during upload
+        window.addEventListener('beforeunload', function preventUnload(e) {
+            console.log('⚠️ Preventing page unload during VCF upload');
+            e.preventDefault();
+            e.returnValue = '';
+            // Remove this listener after a short delay
+            setTimeout(() => {
+                window.removeEventListener('beforeunload', preventUnload);
+            }, 5000);
+        });
+        
         // Show validation in progress
         const validationElement = document.getElementById('vcf-validation');
         validationElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Uploading and validating file...</span>';
         
+        console.log('🌐 Starting file upload to server...');
+        
         // Upload file to server
         const uploadResult = await uploadVcfFile(file);
+        console.log('✅ VCF file uploaded successfully:', uploadResult);
+        console.log('🔍 Current section after upload:', AppState.currentSection);
+        console.log('🔍 Current step after upload:', AppState.currentStep);
         
         // Store file info
         AppState.vcfFile = {
@@ -599,6 +327,8 @@ async function processVcfFile(file) {
             filepath: uploadResult.filepath,
             filename: uploadResult.filename
         };
+        
+        console.log('💾 Stored VCF file info in AppState');
         
         // Update UI
         document.getElementById('vcf-filename').textContent = file.name;
@@ -611,19 +341,49 @@ async function processVcfFile(file) {
         // Enable next button
         document.getElementById('vcf-next-btn').disabled = false;
         
+        console.log('🎨 Updated UI elements');
+        
+        // Save analysis state to localStorage to persist across page reloads
+        console.log('💾 Saving analysis state after VCF upload...');
+        console.log('🔍 Current section before saving state:', AppState.currentSection);
+        console.log('🔍 Current step before saving state:', AppState.currentStep);
+        
+        // Ensure we're in the correct state before saving
+        AppState.currentSection = 'analysis';
+        AppState.currentStep = 2;
+        
+        saveAnalysisState();
+        console.log('✅ Analysis state saved successfully');
+        
+        // Ensure we stay in the analysis section
+        if (AppState.currentSection !== 'analysis') {
+            console.log('🔄 Correcting section back to analysis');
+            AppState.currentSection = 'analysis';
+        }
+        
+        // Double-check that we're still on the correct step
+        if (AppState.currentStep !== 2) {
+            console.log('🔄 Correcting step back to 2');
+            AppState.currentStep = 2;
+        }
+        
+        console.log('🎉 About to show success toast');
         showToast('VCF file uploaded successfully', 'success');
+        console.log('✅ VCF processing completed successfully');
         
     } catch (error) {
-        console.error('Error processing VCF file:', error);
+        console.error('❌ Error processing VCF file:', error);
+        console.log('🔍 Current section on error:', AppState.currentSection);
+        console.log('🔍 Current step on error:', AppState.currentStep);
         
         // Show error validation
         const validationElement = document.getElementById('vcf-validation');
-        validationElement.innerHTML = <i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> <span>Error: ${error.message}</span>;
+        validationElement.innerHTML = `<i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> <span>Error: ${error.message}</span>`;
         
         // Disable next button
         document.getElementById('vcf-next-btn').disabled = true;
         
-        showToast(Upload failed: ${error.message}, 'error');
+        showToast(`Upload failed: ${error.message}`, 'error');
     }
 }
 
@@ -680,7 +440,7 @@ function updateSelectedDrugs() {
 
 function createDrugElement(drug, isSelected) {
     const div = document.createElement('div');
-    div.className = drug-item ${drug.isCustom ? 'custom-drug' : ''};
+    div.className = `drug-item ${drug.isCustom ? 'custom-drug' : ''}`;
     div.onclick = () => toggleDrugSelection(drug);
     
     const customIcon = drug.isCustom ? '<i class="fas fa-user-plus" style="color: var(--accent-color); margin-right: 0.5rem;"></i>' : '';
@@ -710,6 +470,9 @@ function toggleDrugSelection(drug) {
     
     updateSelectedDrugs();
     populateAvailableDrugs();
+    
+    // Save analysis state when drug selection changes
+    saveAnalysisState();
 }
 
 function handleDrugSearch(e) {
@@ -772,11 +535,11 @@ function addCustomDrug() {
     if (databaseDrug) {
         // Add from database
         AppState.selectedDrugs.push(databaseDrug);
-        showToast(Added ${databaseDrug.name} from database, 'success');
+        showToast(`Added ${databaseDrug.name} from database`, 'success');
     } else {
         // Create custom drug entry
         const customDrug = {
-            id: custom_${Date.now()},
+            id: `custom_${Date.now()}`,
             name: drugName,
             generic: drugName.toLowerCase(),
             category: 'custom',
@@ -787,7 +550,7 @@ function addCustomDrug() {
         };
         
         AppState.selectedDrugs.push(customDrug);
-        showToast(Added custom drug: ${drugName}, 'success');
+        showToast(`Added custom drug: ${drugName}`, 'success');
     }
     
     // Clear input and update UI
@@ -836,17 +599,24 @@ async function runAnalysis() {
         updateProgress(10, 'Starting analysis...', 'Preparing analysis request...');
         
         // Start analysis on server
+        console.log('🚀 Starting analysis with job data:', {
+            vcfFile: AppState.vcfFile?.name,
+            selectedDrugs: AppState.selectedDrugs.map(d => d.name),
+            patientInfo: AppState.patientInfo
+        });
+        
         const analysisResponse = await startAnalysisAPI();
         AppState.currentJobId = analysisResponse.job_id;
         
-        updateProgress(20, 'Analysis queued...', Job ID: ${AppState.currentJobId});
+        console.log('✅ Analysis started successfully. Job ID:', AppState.currentJobId);
+        updateProgress(20, 'Analysis queued...', `Job ID: ${AppState.currentJobId}`);
         
         // Poll for status updates
         await pollAnalysisStatus();
         
     } catch (error) {
-        console.error('Analysis failed:', error);
-        showToast(Analysis failed: ${error.message}, 'error');
+        console.error('❌ Analysis failed:', error);
+        showToast(`Analysis failed: ${error.message}`, 'error');
         
         // Reset to step 4
         document.getElementById('analysis-progress').style.display = 'none';
@@ -857,6 +627,14 @@ async function runAnalysis() {
 async function pollAnalysisStatus() {
     const maxAttempts = 120; // 10 minutes with 5-second intervals
     let attempts = 0;
+    
+    // Add safeguard against page refresh during analysis completion
+    const preventRefreshDuringCompletion = function(e) {
+        console.log('⚠️ Preventing page refresh during analysis completion');
+        e.preventDefault();
+        e.returnValue = 'Analysis is completing. Please wait...';
+        return 'Analysis is completing. Please wait...';
+    };
     
     const poll = async () => {
         try {
@@ -871,33 +649,90 @@ async function pollAnalysisStatus() {
                     'Processing genetic variants and drug interactions...'
                 );
             } else if (status.status === 'completed') {
+                // Add extra protection against page refresh during completion
+                window.addEventListener('beforeunload', preventRefreshDuringCompletion);
+                
                 updateProgress(100, 'Analysis completed!', 'Generating report...');
                 
                 // Add to reports
                 const report = {
                     id: status.id,
-                    patientId: AppState.patientInfo.id,
-                    patientName: AppState.patientInfo.name || 'Unknown',
-                    title: Pharmacogenomics Report - ${AppState.patientInfo.id},
+                    jobId: status.id, // Use the API report ID as jobId
+                    title: `Analysis for ${AppState.patientInfo.name || AppState.patientInfo.id || 'Unknown Patient'}`,
                     date: status.created_at,
                     status: 'completed',
+                    summary: `Pharmacogenomics analysis for ${AppState.selectedDrugs.length} drug(s) completed successfully.`,
+                    patientId: AppState.patientInfo.id || 'Unknown',
                     drugs: AppState.selectedDrugs.map(drug => drug.name),
                     variants: status.result?.analysis_summary?.variants_processed || 0,
                     interactions: status.result?.analysis_summary?.interactions_found || 0,
                     highRiskInteractions: status.result?.analysis_summary?.high_risk_interactions || 0,
-                    summary: Analysis of ${AppState.selectedDrugs.length} drugs completed successfully.,
                     config: { ...AppState.analysisConfig },
                     notes: AppState.patientInfo.notes,
                     jobId: status.id
                 };
                 
                 AppState.reports.unshift(report);
+                console.log('✅ Analysis completed! Report added:', report.title);
+                console.log('📊 Report details:', {
+                    id: report.id,
+                    variants: report.variants,
+                    drugs: report.drugs.length,
+                    interactions: report.interactions
+                });
                 
+                // Show immediate completion toast
+                showToast('🎉 Analysis completed successfully!', 'success');
+                
+                // Show detailed completion toast with report info
                 setTimeout(() => {
-                    switchSection('reports');
-                    showToast('Analysis completed successfully!', 'success');
-                    resetAnalysisForm();
+                    showToast(`✅ Analysis Complete!<br>
+                              📊 Report: "${report.title}"<br>
+                              🧬 ${report.variants.toLocaleString()} variants processed<br>
+                              💊 ${report.drugs.length} drug(s) analyzed<br>
+                              ⚠️ ${report.highRiskInteractions} high-risk interactions found`, 'success');
                 }, 1000);
+                
+                // Auto-redirect to reports page after completion
+                setTimeout(() => {
+                    console.log('🎯 Auto-redirecting to reports page...');
+                    
+                    // First, perform cleanup
+                    console.log('🧹 Clearing analysis state and resetting form...');
+                    
+                    // Hide progress UI
+                    const progressElement = document.getElementById('analysis-progress');
+                    if (progressElement) {
+                        progressElement.style.display = 'none';
+                    }
+                    
+                    // Clear all analysis state
+                    clearAnalysisState();
+                    AppState.currentStep = 1;
+                    AppState.vcfFile = null;
+                    AppState.selectedDrugs = [];
+                    AppState.currentJobId = null;
+                    
+                    // Reset the analysis form
+                    resetAnalysisForm();
+                    
+                    // Update dashboard with new data
+                    updateDashboard();
+                    
+                    console.log('✅ Analysis cleanup completed');
+                    
+                    // Remove the beforeunload protection
+                    window.removeEventListener('beforeunload', preventRefreshDuringCompletion);
+                    console.log('🔓 Removed page refresh protection');
+                    
+                    // Redirect to reports page
+                    setTimeout(() => {
+                        console.log('📊 Redirecting to reports page...');
+                        switchSection('reports');
+                        showToast('📊 Analysis completed! Your new report is available.', 'success');
+                    }, 500);
+                    
+                }, 2000);
                 
                 return;
             } else if (status.status === 'failed') {
@@ -916,6 +751,9 @@ async function pollAnalysisStatus() {
         } catch (error) {
             console.error('Error polling analysis status:', error);
             
+            // Remove protection on error
+            window.removeEventListener('beforeunload', preventRefreshDuringCompletion);
+            
             // Provide more specific error messages
             let errorMessage = error.message;
             if (error.message.includes('Failed to locate')) {
@@ -926,7 +764,7 @@ async function pollAnalysisStatus() {
                 errorMessage = 'Network connection error. Please check your connection and try again.';
             }
             
-            showToast(Analysis error: ${errorMessage}, 'error');
+            showToast(`Analysis error: ${errorMessage}`, 'error');
             
             // Reset to step 4
             document.getElementById('analysis-progress').style.display = 'none';
@@ -943,7 +781,7 @@ function updateProgress(percentage, text, details) {
     const progressText = document.getElementById('progress-text');
     const progressDetails = document.getElementById('progress-details');
     
-    if (progressFill) progressFill.style.width = ${percentage}%;
+    if (progressFill) progressFill.style.width = `${percentage}%`;
     if (progressText) progressText.textContent = text;
     if (progressDetails) progressDetails.textContent = details;
 }
@@ -1153,7 +991,7 @@ function createDrugCard(drug) {
         <div class="drug-genes">
             <h4>Associated Genes</h4>
             <div class="gene-tags">
-                ${drug.genes.map(gene => <span class="gene-tag">${gene}</span>).join('')}
+                ${drug.genes.map(gene => `<span class="gene-tag">${gene}</span>`).join('')}
             </div>
         </div>
     `;
@@ -1231,13 +1069,13 @@ function generateReportModalContent(report) {
             <div class="detail-section">
                 <h3>Analysis Summary</h3>
                 <p>${report.summary}</p>
-                ${report.notes ? <p><strong>Notes:</strong> ${report.notes}</p> : ''}
+                ${report.notes ? `<p><strong>Notes:</strong> ${report.notes}</p>` : ''}
             </div>
             
             <div class="detail-section">
                 <h3>Analyzed Drugs</h3>
                 <div class="drug-tags">
-                    ${report.drugs.map(drug => <span class="gene-tag">${drug}</span>).join('')}
+                    ${report.drugs.map(drug => `<span class="gene-tag">${drug}</span>`).join('')}
                 </div>
             </div>
             
@@ -1302,7 +1140,7 @@ function generateDrugModalContent(drug) {
             <div class="detail-section">
                 <h3>Associated Pharmacogenes</h3>
                 <div class="gene-tags">
-                    ${drug.genes.map(gene => <span class="gene-tag">${gene}</span>).join('')}
+                    ${drug.genes.map(gene => `<span class="gene-tag">${gene}</span>`).join('')}
                 </div>
                 <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
                     These genes may affect how your body processes this medication.
@@ -1392,6 +1230,9 @@ function loadStoredData() {
     const savedReports = localStorage.getItem('pharmgenome-reports');
     if (savedReports) {
         AppState.reports = JSON.parse(savedReports);
+        // Sort reports by date in descending order (latest first)
+        AppState.reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+        console.log('📊 Reports loaded from localStorage and sorted by date (latest first):', AppState.reports.length);
     }
 }
 
@@ -1410,7 +1251,7 @@ function exportData() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = pharmgenome-export-${new Date().toISOString().split('T')[0]}.json;
+    a.download = `pharmgenome-export-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     
@@ -1440,10 +1281,10 @@ async function downloadReport(reportId) {
         }
         
         // Create download link
-        const downloadUrl = ${AppState.apiEndpoint}/api/report/${report.jobId}/download;
+        const downloadUrl = `${AppState.apiEndpoint}/api/report/${report.jobId}/download`;
         const link = document.createElement('a');
         link.href = downloadUrl;
-        link.download = pharmacogenomics_report_${reportId}.html;
+        link.download = `pharmacogenomics_report_${reportId}.html`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -1458,7 +1299,7 @@ async function downloadReport(reportId) {
 async function viewFullReport(jobId) {
     try {
         // Open the full HTML report in a new window
-        const reportUrl = ${AppState.apiEndpoint}/api/report/${jobId}/view;
+        const reportUrl = `${AppState.apiEndpoint}/api/report/${jobId}/view`;
         const newWindow = window.open(reportUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
         
         if (!newWindow) {
@@ -1473,10 +1314,29 @@ async function viewFullReport(jobId) {
 }
 
 // Utility Functions
+function redirectToReport(reportId) {
+    const reportUrl = `${AppState.apiEndpoint}/api/report/${reportId}/view`;
+    console.log('🎯 Manual redirect to report:', reportUrl);
+    
+    try {
+        window.location.href = reportUrl;
+    } catch (error) {
+        console.error('❌ Manual redirect failed:', error);
+        // Fallback to opening in new window
+        try {
+            window.open(reportUrl, '_blank');
+            showToast('Report opened in new window', 'info');
+        } catch (popupError) {
+            console.error('❌ Popup failed:', popupError);
+            showToast(`Report ready! <a href="${reportUrl}" target="_blank" style="color: white; text-decoration: underline;">Click here to view</a>`, 'success');
+        }
+    }
+}
+
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = toast ${type};
+    toast.className = `toast ${type}`;
     
     toast.innerHTML = `
         <div class="toast-header">
@@ -1488,12 +1348,13 @@ function showToast(message, type = 'info') {
     
     container.appendChild(toast);
     
-    // Auto remove after 5 seconds
+    // Auto remove after 8 seconds for success messages with links, 5 seconds for others
+    const autoRemoveTime = (type === 'success' && message.includes('<a')) ? 8000 : 5000;
     setTimeout(() => {
         if (toast.parentElement) {
             toast.remove();
         }
-    }, 5000);
+    }, autoRemoveTime);
 }
 
 function showLoading() {
@@ -1509,3 +1370,712 @@ document.addEventListener('DOMContentLoaded', function() {
     populateAvailableDrugs();
     updateSelectedDrugs();
 });
+
+function saveAnalysisState() {
+    const analysisState = {
+        currentStep: AppState.currentStep,
+        vcfFile: AppState.vcfFile,
+        selectedDrugs: AppState.selectedDrugs,
+        patientInfo: AppState.patientInfo,
+        analysisConfig: AppState.analysisConfig,
+        currentSection: AppState.currentSection,
+        timestamp: Date.now()
+    };
+    
+    try {
+        localStorage.setItem('pharmgenome_analysis_state', JSON.stringify(analysisState));
+    } catch (error) {
+        console.error('Failed to save analysis state:', error);
+    }
+}
+
+function loadAnalysisState() {
+    try {
+        const savedState = localStorage.getItem('pharmgenome_analysis_state');
+        if (!savedState) return null;
+        
+        const analysisState = JSON.parse(savedState);
+        
+        // Check if the saved state is not too old (24 hours)
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        if (Date.now() - analysisState.timestamp > maxAge) {
+            localStorage.removeItem('pharmgenome_analysis_state');
+            return null;
+        }
+        
+        return analysisState;
+    } catch (error) {
+        console.error('Failed to load analysis state:', error);
+        localStorage.removeItem('pharmgenome_analysis_state');
+        return null;
+    }
+}
+
+function restoreAnalysisState(savedState) {
+    if (!savedState) return false;
+    
+    try {
+        // Restore AppState
+        AppState.currentStep = savedState.currentStep || 1;
+        AppState.vcfFile = savedState.vcfFile || null;
+        AppState.selectedDrugs = savedState.selectedDrugs || [];
+        AppState.patientInfo = savedState.patientInfo || { id: '', name: '', notes: '' };
+        AppState.analysisConfig = savedState.analysisConfig || {};
+        
+        // Restore UI state if we're in analysis section
+        if (savedState.currentSection === 'analysis') {
+            // Restore form fields
+            if (savedState.patientInfo.id) {
+                const patientIdInput = document.getElementById('patient-id');
+                if (patientIdInput) patientIdInput.value = savedState.patientInfo.id;
+            }
+            
+            if (savedState.patientInfo.name) {
+                const patientNameInput = document.getElementById('patient-name');
+                if (patientNameInput) patientNameInput.value = savedState.patientInfo.name;
+            }
+            
+            if (savedState.patientInfo.notes) {
+                const analysisNotesInput = document.getElementById('analysis-notes');
+                if (analysisNotesInput) analysisNotesInput.value = savedState.patientInfo.notes;
+            }
+            
+            // Restore VCF file info
+            if (savedState.vcfFile) {
+                const vcfFilenameElement = document.getElementById('vcf-filename');
+                const vcfFilesizeElement = document.getElementById('vcf-filesize');
+                const vcfFileInfoElement = document.getElementById('vcf-file-info');
+                const vcfNextBtn = document.getElementById('vcf-next-btn');
+                const validationElement = document.getElementById('vcf-validation');
+                
+                if (vcfFilenameElement) vcfFilenameElement.textContent = savedState.vcfFile.name;
+                if (vcfFilesizeElement) vcfFilesizeElement.textContent = formatFileSize(savedState.vcfFile.size);
+                if (vcfFileInfoElement) vcfFileInfoElement.style.display = 'block';
+                if (vcfNextBtn) vcfNextBtn.disabled = false;
+                if (validationElement) {
+                    validationElement.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> <span>File validated successfully</span>';
+                }
+            }
+            
+            // Restore drug selection
+            updateSelectedDrugs();
+            populateAvailableDrugs();
+            
+            // Show the correct step
+            showStep(AppState.currentStep);
+            
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error('Failed to restore analysis state:', error);
+        return false;
+    }
+}
+
+function clearAnalysisState() {
+    try {
+        localStorage.removeItem('pharmgenome_analysis_state');
+    } catch (error) {
+        console.error('Failed to clear analysis state:', error);
+    }
+}
+
+// Add debugging for unexpected page reloads
+window.addEventListener('beforeunload', function(e) {
+    console.log('⚠️ Page is about to unload/reload');
+    console.log('🔍 Current section:', AppState.currentSection);
+    console.log('🔍 Current step:', AppState.currentStep);
+    console.log('🔍 VCF file:', AppState.vcfFile?.name);
+    console.log('🔍 Current job ID:', AppState.currentJobId);
+    console.log('🔍 Analysis progress visible:', document.getElementById('analysis-progress')?.style.display !== 'none');
+    console.log('🔍 Active modal:', document.querySelector('.modal.active')?.id);
+    
+    // Get stack trace to see what triggered the unload
+    console.trace('Page unload triggered from:');
+});
+
+// Add debugging for page load
+window.addEventListener('load', function() {
+    console.log('📄 Page loaded');
+    console.log('🔍 Current URL:', window.location.href);
+    console.log('🔍 Document ready state:', document.readyState);
+});
+
+// Add debugging for DOM content loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM content loaded');
+    console.log('🔍 Current URL:', window.location.href);
+});
+
+// Add debugging for visibility changes
+document.addEventListener('visibilitychange', function() {
+    console.log('👁️ Page visibility changed:', document.visibilityState);
+    if (document.visibilityState === 'hidden') {
+        console.log('🔍 Page hidden - Current section:', AppState.currentSection);
+        console.log('🔍 Analysis in progress:', document.getElementById('analysis-progress')?.style.display !== 'none');
+    }
+});
+
+async function startAnalysisAPI() {
+    try {
+        const analysisData = {
+            vcf_file: AppState.vcfFile.filepath,
+            drugs: AppState.selectedDrugs.map(drug => drug.id),
+            drug_details: AppState.selectedDrugs.map(drug => ({
+                id: drug.id,
+                name: drug.name,
+                isCustom: drug.isCustom || false
+            })),
+            patient_info: AppState.patientInfo,
+            config: AppState.analysisConfig
+        };
+        
+        const response = await apiCall('/start-analysis', {
+            method: 'POST',
+            body: JSON.stringify(analysisData)
+        });
+        
+        return response;
+    } catch (error) {
+        console.error('Failed to start analysis:', error);
+        throw error;
+    }
+}
+
+async function checkAnalysisStatus(jobId) {
+    try {
+        return await apiCall(`/analysis-status/${jobId}`);
+    } catch (error) {
+        console.error('Failed to check analysis status:', error);
+        throw error;
+    }
+}
+
+function setupEventListeners() {
+    // Navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', handleNavigation);
+    });
+
+    // VCF File Upload
+    const vcfFileInput = document.getElementById('vcf-file');
+    const vcfUploadArea = document.getElementById('vcf-upload-area');
+    
+    if (vcfFileInput) {
+        vcfFileInput.addEventListener('change', handleVcfFileSelect);
+    }
+    
+    if (vcfUploadArea) {
+        vcfUploadArea.addEventListener('dragover', handleDragOver);
+        vcfUploadArea.addEventListener('drop', handleDrop);
+        vcfUploadArea.addEventListener('click', () => vcfFileInput?.click());
+    }
+
+    // Drug Search and Selection
+    const drugSearch = document.getElementById('drug-search');
+    if (drugSearch) {
+        drugSearch.addEventListener('input', handleDrugSearch);
+    }
+
+    // Category buttons
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', handleCategoryFilter);
+    });
+
+    // Form inputs
+    const patientIdInput = document.getElementById('patient-id');
+    const patientNameInput = document.getElementById('patient-name');
+    const analysisNotesInput = document.getElementById('analysis-notes');
+
+    if (patientIdInput) {
+        patientIdInput.addEventListener('input', (e) => {
+            AppState.patientInfo.id = e.target.value;
+            saveAnalysisState();
+        });
+    }
+
+    if (patientNameInput) {
+        patientNameInput.addEventListener('input', (e) => {
+            AppState.patientInfo.name = e.target.value;
+            saveAnalysisState();
+        });
+    }
+
+    if (analysisNotesInput) {
+        analysisNotesInput.addEventListener('input', (e) => {
+            AppState.patientInfo.notes = e.target.value;
+            saveAnalysisState();
+        });
+    }
+
+    // Configuration checkboxes
+    document.querySelectorAll('#step-4 input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', handleConfigChange);
+    });
+
+    // Reports search and filter
+    const reportSearch = document.getElementById('report-search');
+    const reportFilter = document.getElementById('report-filter');
+
+    if (reportSearch) {
+        reportSearch.addEventListener('input', handleReportSearch);
+    }
+
+    if (reportFilter) {
+        reportFilter.addEventListener('change', handleReportFilter);
+    }
+
+    // View options
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', handleViewChange);
+    });
+
+    // Drug database search and filters
+    const drugDbSearch = document.getElementById('drug-db-search');
+    const drugCategoryFilter = document.getElementById('drug-category-filter');
+    const drugEvidenceFilter = document.getElementById('drug-evidence-filter');
+
+    if (drugDbSearch) {
+        drugDbSearch.addEventListener('input', handleDrugDbSearch);
+    }
+
+    if (drugCategoryFilter) {
+        drugCategoryFilter.addEventListener('change', handleDrugDbFilter);
+    }
+
+    if (drugEvidenceFilter) {
+        drugEvidenceFilter.addEventListener('change', handleDrugDbFilter);
+    }
+
+    // Settings
+    document.querySelectorAll('#settings input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', handleSettingsChange);
+    });
+
+    const apiEndpointInput = document.getElementById('api-endpoint');
+    if (apiEndpointInput) {
+        apiEndpointInput.addEventListener('change', (e) => {
+            AppState.apiEndpoint = e.target.value;
+            saveSettings();
+        });
+    }
+
+    // Modal close events
+    document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modal = e.target.closest('.modal');
+            if (modal) {
+                closeModal(modal.id);
+            }
+        });
+    });
+
+    // Click outside modal to close
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal(modal.id);
+            }
+        });
+    });
+    
+    // Prevent any form submissions that might cause page reload
+    document.addEventListener('submit', (e) => {
+        console.log('⚠️ Form submission detected, preventing default');
+        console.log('🔍 Form target:', e.target);
+        console.log('🔍 Current section:', AppState.currentSection);
+        e.preventDefault();
+        return false;
+    });
+    
+    // Prevent any navigation that might be triggered accidentally
+    document.addEventListener('click', (e) => {
+        // Check if clicked element is a link that might cause navigation
+        const link = e.target.closest('a[href]');
+        if (link && link.href && !link.target) {
+            const href = link.getAttribute('href');
+            // Only prevent navigation for relative links or hash links that might cause issues
+            if (href.startsWith('#') || href.startsWith('/') || href.startsWith('./')) {
+                console.log('🔗 Preventing potentially problematic navigation to:', href);
+                e.preventDefault();
+            }
+        }
+        
+        // Additional protection during analysis completion
+        const analysisProgress = document.getElementById('analysis-progress');
+        const isAnalysisInProgress = analysisProgress && analysisProgress.style.display !== 'none';
+        const activeModal = document.querySelector('.modal.active');
+        
+        if (isAnalysisInProgress || activeModal) {
+            // Check if the click is on a navigation element that might cause issues
+            const navElement = e.target.closest('.nav-link, .btn[onclick*="switch"], a[href*="#"]');
+            if (navElement && !e.target.closest('.modal')) {
+                console.log('🔒 Preventing navigation during analysis completion or modal display');
+                e.preventDefault();
+                e.stopPropagation();
+                showToast('Please wait for analysis to complete or close the modal first', 'warning');
+                return false;
+            }
+        }
+    });
+    
+    // Add protection against accidental page navigation during critical operations
+    window.addEventListener('popstate', function(e) {
+        const analysisProgress = document.getElementById('analysis-progress');
+        const isAnalysisInProgress = analysisProgress && analysisProgress.style.display !== 'none';
+        const activeModal = document.querySelector('.modal.active');
+        
+        if (isAnalysisInProgress || activeModal) {
+            console.log('🔒 Preventing browser back/forward during analysis completion');
+            e.preventDefault();
+            // Push the current state back to prevent navigation
+            history.pushState(null, null, window.location.href);
+            showToast('Please wait for analysis to complete or close the modal first', 'warning');
+        }
+    });
+}
+
+// Navigation Functions
+function handleNavigation(e) {
+    e.preventDefault();
+    const section = e.target.closest('.nav-link').dataset.section;
+    switchSection(section);
+}
+
+function switchSection(sectionName) {
+    // Update navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    const activeLink = document.querySelector(`[data-section="${sectionName}"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
+    }
+
+    // Update content
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+    });
+
+    const targetSection = document.getElementById(sectionName);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        AppState.currentSection = sectionName;
+        
+        // Save analysis state when switching to analysis section
+        if (sectionName === 'analysis') {
+            saveAnalysisState();
+        }
+    }
+
+    // Load section-specific data
+    switch (sectionName) {
+        case 'dashboard':
+            updateDashboard();
+            break;
+        case 'analysis':
+            // Try to restore saved analysis state only if user explicitly navigates here
+            const savedAnalysisState = loadAnalysisState();
+            if (savedAnalysisState && savedAnalysisState.currentStep > 1) {
+                console.log('🔄 Restoring saved analysis state...');
+                const restored = restoreAnalysisState(savedAnalysisState);
+                if (restored) {
+                    showStep(savedAnalysisState.currentStep);
+                } else {
+                    // Failed to restore, start fresh
+                    resetAnalysisForm();
+                }
+            } else {
+                // No saved state or user is starting fresh, reset to step 1
+                resetAnalysisForm();
+            }
+            break;
+        case 'reports':
+            loadReports();
+            break;
+        case 'drugs':
+            populateDrugDatabase();
+            break;
+        case 'settings':
+            loadSettings();
+            break;
+    }
+}
+
+// Analysis Step Functions
+function startNewAnalysis() {
+    // Explicitly reset the form and start fresh
+    resetAnalysisForm();
+    switchSection('analysis');
+}
+
+function nextStep(stepNumber) {
+    if (validateCurrentStep()) {
+        showStep(stepNumber);
+    }
+}
+
+function previousStep(stepNumber) {
+    showStep(stepNumber);
+}
+
+function showStep(stepNumber) {
+    document.querySelectorAll('.analysis-step').forEach(step => {
+        step.classList.remove('active');
+    });
+
+    const targetStep = document.getElementById(`step-${stepNumber}`);
+    if (targetStep) {
+        targetStep.classList.add('active');
+        AppState.currentStep = stepNumber;
+        
+        // Save analysis state when step changes
+        saveAnalysisState();
+    }
+}
+
+function validateCurrentStep() {
+    switch (AppState.currentStep) {
+        case 1:
+            return validatePatientInfo();
+        case 2:
+            return validateVcfFile();
+        case 3:
+            return validateDrugSelection();
+        case 4:
+            return true; // Configuration is optional
+        default:
+            return true;
+    }
+}
+
+function validatePatientInfo() {
+    const patientId = document.getElementById('patient-id').value.trim();
+    if (!patientId) {
+        showToast('Please enter a patient ID', 'error');
+        return false;
+    }
+    return true;
+}
+
+function validateVcfFile() {
+    if (!AppState.vcfFile) {
+        showToast('Please upload a VCF file', 'error');
+        return false;
+    }
+    return true;
+}
+
+function validateDrugSelection() {
+    if (AppState.selectedDrugs.length === 0) {
+        showToast('Please select at least one drug for analysis', 'error');
+        return false;
+    }
+    return true;
+}
+
+function resetAnalysisForm() {
+    AppState.currentStep = 1;
+    AppState.vcfFile = null;
+    AppState.selectedDrugs = [];
+    
+    showStep(1);
+    
+    // Reset form fields
+    document.getElementById('patient-id').value = '';
+    document.getElementById('patient-name').value = '';
+    document.getElementById('analysis-notes').value = '';
+    
+    // Reset custom drug input
+    const customDrugInput = document.getElementById('custom-drug-name');
+    if (customDrugInput) {
+        customDrugInput.value = '';
+    }
+    
+    // Reset file upload
+    const vcfFileInfo = document.getElementById('vcf-file-info');
+    if (vcfFileInfo) {
+        vcfFileInfo.style.display = 'none';
+    }
+    
+    // Reset drug selection
+    updateSelectedDrugs();
+    populateAvailableDrugs();
+    
+    // Clear saved analysis state
+    clearAnalysisState();
+}
+
+// File Upload Functions
+function handleVcfFileSelect(e) {
+    e.preventDefault(); // Prevent any default behavior
+    const file = e.target.files[0];
+    if (file) {
+        console.log('📁 VCF file selected:', file.name);
+        processVcfFile(file);
+    }
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation(); // Stop event bubbling
+    e.target.closest('.upload-area').classList.add('dragover');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation(); // Stop event bubbling
+    e.target.closest('.upload-area').classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        console.log('📁 VCF file dropped:', files[0].name);
+        processVcfFile(files[0]);
+    }
+}
+
+function showAnalysisCompleteModal(report) {
+    console.log('🎯 Preparing to show analysis complete modal for report:', report.id);
+    
+    try {
+        const modal = document.getElementById('analysis-complete-modal');
+        const title = document.getElementById('modal-analysis-complete-title');
+        const content = document.getElementById('modal-analysis-complete-content');
+        
+        if (!modal || !title || !content) {
+            console.error('❌ Modal elements not found');
+            // Fallback to direct redirect if modal elements are missing
+            switchSection('reports');
+            showToast('Analysis completed! Redirected to reports.', 'success');
+            return;
+        }
+        
+        title.textContent = 'Analysis Completed!';
+        content.innerHTML = generateAnalysisCompleteModalContent(report);
+        
+        // Ensure modal is properly displayed
+        modal.classList.add('active');
+        console.log('✅ Analysis complete modal displayed successfully');
+        
+        // Add event listeners to modal buttons if they don't exist
+        const modalButtons = modal.querySelectorAll('[data-action]');
+        modalButtons.forEach(button => {
+            // Remove any existing listeners to prevent duplicates
+            button.removeEventListener('click', handleAnalysisCompleteModal);
+            // Add the listener
+            button.addEventListener('click', handleAnalysisCompleteModal);
+        });
+        
+        console.log('🔗 Modal button event listeners attached');
+        
+    } catch (error) {
+        console.error('❌ Error showing analysis complete modal:', error);
+        // Fallback to direct redirect if modal fails
+        switchSection('reports');
+        showToast('Analysis completed! Redirected to reports.', 'success');
+    }
+}
+
+function generateAnalysisCompleteModalContent(report) {
+    return `
+        <div class="analysis-complete-details">
+            <div class="detail-section">
+                <h3>Analysis Summary</h3>
+                <p>${report.summary}</p>
+            </div>
+            
+            <div class="detail-section">
+                <h3>Analyzed Drugs</h3>
+                <div class="drug-tags">
+                    ${report.drugs.map(drug => `<span class="gene-tag">${drug}</span>`).join('')}
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3>Analysis Statistics</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <div class="stat-item">
+                        <strong>Total Variants:</strong> ${report.variants}
+                    </div>
+                    <div class="stat-item">
+                        <strong>Drug Interactions:</strong> ${report.interactions}
+                    </div>
+                    <div class="stat-item">
+                        <strong>High Risk:</strong> ${report.highRiskInteractions}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3>Configuration</h3>
+                <ul>
+                    <li>AI Analysis: ${report.config.useCohere ? 'Enabled' : 'Disabled'}</li>
+                    <li>Detailed Analysis: ${report.config.detailedAnalysis ? 'Yes' : 'No'}</li>
+                    <li>Alternative Drugs: ${report.config.includeAlternatives ? 'Yes' : 'No'}</li>
+                    <li>References: ${report.config.includeReferences ? 'Yes' : 'No'}</li>
+                </ul>
+            </div>
+        </div>
+    `;
+}
+
+function handleAnalysisCompleteModal(e) {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent any event bubbling
+    
+    const action = e.target.dataset.action;
+    console.log('🎯 User selected action:', action);
+    
+    // Close modal first to prevent any interference
+    closeModal('analysis-complete-modal');
+    
+    // Add a small delay to ensure modal is fully closed
+    setTimeout(() => {
+        // First, perform cleanup regardless of where user wants to go
+        console.log('🧹 Clearing analysis state and resetting form...');
+        
+        // Hide progress UI
+        const progressElement = document.getElementById('analysis-progress');
+        if (progressElement) {
+            progressElement.style.display = 'none';
+        }
+        
+        // Clear all analysis state
+        clearAnalysisState();
+        AppState.currentStep = 1;
+        AppState.vcfFile = null;
+        AppState.selectedDrugs = [];
+        AppState.currentJobId = null;
+        
+        // Reset the analysis form
+        resetAnalysisForm();
+        
+        // Update dashboard with new data
+        updateDashboard();
+        
+        console.log('✅ Analysis cleanup completed');
+        
+        // Then redirect based on user choice with a small delay to ensure cleanup is complete
+        setTimeout(() => {
+            switch (action) {
+                case 'dashboard':
+                    console.log('🏠 User chose to go to dashboard');
+                    switchSection('dashboard');
+                    showToast('🏠 Redirected to dashboard. Your report is available in the Reports section.', 'info');
+                    break;
+                case 'reports':
+                    console.log('📊 User chose to go to reports');
+                    switchSection('reports');
+                    showToast('📊 Showing your reports. Your latest analysis is at the top.', 'info');
+                    break;
+                default:
+                    console.error('Unknown action:', action);
+                    switchSection('dashboard');
+            }
+        }, 100); // Small delay to ensure state is fully cleared
+        
+    }, 200); // Delay to ensure modal is closed
+} 
