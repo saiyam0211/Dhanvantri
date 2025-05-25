@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""
-Enhanced Drug Mapper Module
-
-This module provides comprehensive drug-gene interaction mapping using:
-- PharmGKB database (15 TSV files + JSON guidelines)
-- CPIC database (7 JSON files)
-- Additional data sources
-- Optimized lookup tables for performance
-"""
 
 import logging
 import json
@@ -47,13 +38,6 @@ class DrugMapper:
     """Enhanced drug mapper with comprehensive PharmGKB, CPIC, and additional data integration."""
     
     def __init__(self, data_dir: str = "data", data_dir_2: str = "data_2"):
-        """
-        Initialize the Enhanced Drug Mapper.
-        
-        Args:
-            data_dir: Directory containing PharmGKB and CPIC data
-            data_dir_2: Directory containing additional data sources
-        """
         self.data_dir = Path(data_dir)
         self.data_dir_2 = Path(data_dir_2)
         
@@ -423,16 +407,6 @@ class DrugMapper:
         logger.info("=== End Statistics ===")
 
     def map_drugs_to_genes(self, drugs: List[str], annotated_variants: List[AnnotatedVariant]) -> Dict[str, List[DrugGeneInteraction]]:
-        """
-        Map drugs to genes using comprehensive database sources.
-        
-        Args:
-            drugs: List of drug names to analyze
-            annotated_variants: List of annotated genetic variants
-        
-        Returns:
-            Dictionary mapping drug names to lists of interactions
-        """
         logger.info(f"Mapping {len(drugs)} drugs to genes from {len(annotated_variants)} variants")
         
         # Extract genes from variants
@@ -628,15 +602,6 @@ class DrugMapper:
         return recommendations
 
     def _extract_genes(self, annotated_variants: List[AnnotatedVariant]) -> Set[str]:
-        """
-        Extract unique gene symbols from annotated variants.
-        
-        Args:
-            annotated_variants: List of annotated genetic variants
-        
-        Returns:
-            Set of unique gene symbols
-        """
         genes = set()
         for variant in annotated_variants:
             if variant.gene_symbol:
