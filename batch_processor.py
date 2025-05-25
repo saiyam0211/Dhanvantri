@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-Batch Processor Module
-
-This module provides functionality to process large VCF files in batches,
-allowing for efficient annotation and analysis of large genomic datasets.
-"""
-
 import os
 import logging
 import json
@@ -24,15 +17,6 @@ from drug_mapper import DrugMapper, DrugGeneInteraction
 logger = logging.getLogger(__name__)
 
 def count_variants(vcf_path: Path) -> int:
-    """
-    Count the total number of variants in a VCF file.
-    
-    Args:
-        vcf_path: Path to the VCF file.
-        
-    Returns:
-        Total number of variants.
-    """
     logger.info(f"Counting variants in {vcf_path}")
     count = 0
     
@@ -51,17 +35,6 @@ def count_variants(vcf_path: Path) -> int:
     return count
 
 def extract_batch(vcf_path: Path, batch_index: int, batch_size: int) -> Path:
-    """
-    Extract a specific batch of variants from a VCF file.
-    
-    Args:
-        vcf_path: Path to the VCF file.
-        batch_index: 0-based index of the batch to extract.
-        batch_size: Number of variants per batch.
-        
-    Returns:
-        Path to the temporary file containing the batch.
-    """
     start_line = batch_index * batch_size
     end_line = start_line + batch_size
     
@@ -112,21 +85,6 @@ def process_batch(
     skip_annotation: bool,
     output_dir: Path
 ) -> Path:
-    """
-    Process a single batch of variants.
-    
-    Args:
-        vcf_path: Path to the VCF file.
-        batch_index: 0-based index of the batch to process.
-        batch_size: Number of variants per batch.
-        drugs: List of drugs to analyze.
-        genome_version: Genome version to use for annotation.
-        skip_annotation: Whether to skip annotation.
-        output_dir: Directory to store batch results.
-        
-    Returns:
-        Path to the JSON file containing the batch results.
-    """
     logger.info(f"Processing batch {batch_index}")
     start_time = time.time()
     
@@ -171,13 +129,6 @@ def process_batch(
             logger.warning(f"Error deleting temporary batch file {batch_file}: {e}")
 
 def save_batch_results(interactions: List[DrugGeneInteraction], output_file: Path) -> None:
-    """
-    Save batch results to a JSON file.
-    
-    Args:
-        interactions: List of DrugGeneInteraction objects.
-        output_file: Path to the output file.
-    """
     # Convert interactions to dictionaries
     interaction_dicts = []
     for interaction in interactions:
@@ -193,15 +144,6 @@ def save_batch_results(interactions: List[DrugGeneInteraction], output_file: Pat
     logger.debug(f"Saved {len(interactions)} interactions to {output_file}")
 
 def load_batch_results(batch_file: Path) -> List[DrugGeneInteraction]:
-    """
-    Load batch results from a JSON file.
-    
-    Args:
-        batch_file: Path to the batch results file.
-        
-    Returns:
-        List of DrugGeneInteraction objects.
-    """
     if not batch_file.exists():
         logger.warning(f"Batch file not found: {batch_file}")
         return []
@@ -222,15 +164,6 @@ def load_batch_results(batch_file: Path) -> List[DrugGeneInteraction]:
         return []
 
 def merge_batch_results(batch_files: List[Path]) -> List[DrugGeneInteraction]:
-    """
-    Merge batch results from multiple JSON files.
-    
-    Args:
-        batch_files: List of paths to batch result files.
-        
-    Returns:
-        List of merged DrugGeneInteraction objects.
-    """
     logger.info(f"Merging results from {len(batch_files)} batches")
     
     all_interactions = []
@@ -293,21 +226,6 @@ def process_in_parallel(
     skip_annotation: bool,
     num_processes: int
 ) -> List[DrugGeneInteraction]:
-    """
-    Process batches in parallel using multiple processes.
-    
-    Args:
-        vcf_path: Path to the VCF file.
-        total_variants: Total number of variants in the file.
-        batch_size: Number of variants per batch.
-        drugs: List of drugs to analyze.
-        genome_version: Genome version to use for annotation.
-        skip_annotation: Whether to skip annotation.
-        num_processes: Number of parallel processes to use.
-        
-    Returns:
-        Combined list of drug-gene interactions.
-    """
     logger.info(f"Processing {total_variants} variants in parallel using {num_processes} processes")
     
     # Calculate number of batches
@@ -367,20 +285,6 @@ def process_single_batch(
     genome_version: str,
     skip_annotation: bool
 ) -> List[DrugGeneInteraction]:
-    """
-    Process a single batch and return the results directly.
-    
-    Args:
-        vcf_path: Path to the VCF file.
-        batch_index: 0-based index of the batch to process.
-        batch_size: Number of variants per batch.
-        drugs: List of drugs to analyze.
-        genome_version: Genome version to use for annotation.
-        skip_annotation: Whether to skip annotation.
-        
-    Returns:
-        List of drug-gene interactions.
-    """
     logger.info(f"Processing single batch {batch_index}")
     
     # Create temporary directory for batch results
@@ -404,16 +308,6 @@ def process_single_batch(
             logger.warning(f"Error deleting temporary directory {temp_dir}: {e}")
 
 def estimate_batch_count(vcf_path: Path, batch_size: int) -> int:
-    """
-    Estimate the number of batches without counting all variants.
-    
-    Args:
-        vcf_path: Path to the VCF file.
-        batch_size: Number of variants per batch.
-        
-    Returns:
-        Estimated number of batches.
-    """
     # Get file size
     file_size = os.path.getsize(vcf_path)
     
