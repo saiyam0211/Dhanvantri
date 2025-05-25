@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-Personalized Report Generator Module
-
-This module generates comprehensive, personalized pharmacogenomics reports
-with AI-powered analysis, dosage recommendations, and alternative medications.
-"""
-
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -29,18 +22,6 @@ class PersonalizedReportGenerator:
         output_path: Path,
         format: str = "html"
     ) -> str:
-        """
-        Generate a comprehensive personalized pharmacogenomics report.
-        
-        Args:
-            personalized_reports: Dictionary mapping drug names to PersonalizedDrugReport objects.
-            patient_id: Patient identifier.
-            output_path: Output file path.
-            format: Output format ("html" or "pdf").
-            
-        Returns:
-            Path to the generated report.
-        """
         logger.info(f"Generating comprehensive personalized {format} report for {len(personalized_reports)} drugs")
         
         # Generate HTML content
@@ -62,16 +43,6 @@ class PersonalizedReportGenerator:
         personalized_reports: Dict[str, PersonalizedDrugReport],
         patient_id: str
     ) -> str:
-        """
-        Render the personalized report as HTML.
-        
-        Args:
-            personalized_reports: Dictionary of PersonalizedDrugReport objects.
-            patient_id: Patient identifier.
-            
-        Returns:
-            HTML string.
-        """
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
         
         html = f"""
