@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""
-Annotator Module
-
-This module provides functionality to annotate genetic variants using
-the Ensembl Variant Effect Predictor (VEP) API or local installation,
-or SnpEff for local annotation.
-It processes variants to identify gene-level information and consequences.
-"""
 
 import json
 import logging
@@ -44,15 +36,6 @@ class BaseAnnotator:
     """Base class for variant annotators."""
     
     def annotate(self, variants: List[Variant]) -> List[AnnotatedVariant]:
-        """
-        Annotate a list of variants.
-        
-        Args:
-            variants: List of variants to annotate.
-            
-        Returns:
-            List of annotated variants.
-        """
         if not variants:
             return []
             
@@ -91,15 +74,6 @@ class SnpEffAnnotator(BaseAnnotator):
     """Annotator using SnpEff for variant annotation."""
     
     def __init__(self, snpeff_jar: Optional[Path] = None, genome: str = "hg38", memory: str = "4g", genome_version: str = None):
-        """
-        Initialize the SnpEff annotator.
-        
-        Args:
-            snpeff_jar: Path to the SnpEff JAR file.
-            genome: Genome version to use for annotation.
-            memory: Memory allocation for Java.
-            genome_version: Alternative name for genome parameter (for compatibility).
-        """
         self.genome = genome_version if genome_version else genome
         
         # Use JAVA_OPTS environment variable for memory if available
@@ -192,15 +166,6 @@ class SnpEffAnnotator(BaseAnnotator):
                 raise RuntimeError(f"Failed to download SnpEff database: {e}")
     
     def annotate(self, variants: List[Variant]) -> List[AnnotatedVariant]:
-        """
-        Annotate variants using SnpEff.
-        
-        Args:
-            variants: List of variants to annotate.
-            
-        Returns:
-            List of annotated variants.
-        """
         if not variants:
             return []
             
@@ -225,15 +190,6 @@ class SnpEffAnnotator(BaseAnnotator):
             raise
     
     def _annotate_variant(self, variant: Variant) -> AnnotatedVariant:
-        """
-        Annotate a single variant using SnpEff.
-        
-        Args:
-            variant: Variant to annotate.
-            
-        Returns:
-            Annotated variant.
-        """
         # For now, just create a basic annotated variant with gene info from the VCF
         gene_symbol = None
         if "GENE" in variant.info:
@@ -250,15 +206,6 @@ class SnpEffAnnotator(BaseAnnotator):
         )
 
     def file_based_annotation(self, variants: List[Variant]) -> List[AnnotatedVariant]:
-        """
-        Annotate a list of variants using file-based SnpEff annotation.
-        
-        Args:
-            variants: List of variants to annotate.
-            
-        Returns:
-            List of annotated variants.
-        """
         try:
             # Create temporary files for input and output
             with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.vcf') as temp_in:
@@ -448,13 +395,6 @@ class VEPAnnotator(BaseAnnotator):
     VEP_API_ENDPOINT = "https://rest.ensembl.org/vep/human/region"
     
     def __init__(self, use_local: bool = False, local_path: Optional[str] = None):
-        """
-        Initialize the VEP annotator.
-        
-        Args:
-            use_local: Whether to use a local VEP installation.
-            local_path: Path to local VEP installation.
-        """
         self.use_local = use_local
         self.local_path = local_path
         
@@ -471,15 +411,6 @@ class VEPAnnotator(BaseAnnotator):
                 logger.error(f"Error finding local VEP: {e}")
     
     def annotate(self, variants: List[Variant]) -> List[AnnotatedVariant]:
-        """
-        Annotate variants using VEP.
-        
-        Args:
-            variants: List of Variant objects.
-            
-        Returns:
-            List of AnnotatedVariant objects.
-        """
         logger.info(f"Annotating {len(variants)} variants using {'local' if self.use_local else 'REST API'} VEP")
         
         if self.use_local and self.local_path:
@@ -488,15 +419,6 @@ class VEPAnnotator(BaseAnnotator):
             return self._annotate_api(variants)
     
     def _annotate_api(self, variants: List[Variant]) -> List[AnnotatedVariant]:
-        """
-        Annotate variants using the VEP REST API.
-        
-        Args:
-            variants: List of Variant objects.
-            
-        Returns:
-            List of AnnotatedVariant objects.
-        """
         annotated_variants = []
         
         # Process variants in batches to avoid overwhelming the API
@@ -557,15 +479,6 @@ class VEPAnnotator(BaseAnnotator):
         return annotated_variants
     
     def _annotate_local(self, variants: List[Variant]) -> List[AnnotatedVariant]:
-        """
-        Annotate variants using a local VEP installation.
-        
-        Args:
-            variants: List of Variant objects.
-            
-        Returns:
-            List of AnnotatedVariant objects.
-        """
         annotated_variants = []
         
         try:
@@ -633,15 +546,6 @@ class VEPAnnotator(BaseAnnotator):
         return annotated_variants
     
     def _format_variant_for_vep(self, variant: Variant) -> tuple:
-        """
-        Format a variant for the VEP API using the region endpoint format.
-        
-        Args:
-            variant: Variant object.
-            
-        Returns:
-            Tuple of (region, allele) formatted for VEP API
-        """
         try:
             # Ensure chromosome format is correct (remove 'chr' prefix if present)
             chrom = variant.chrom
@@ -678,16 +582,6 @@ class VEPAnnotator(BaseAnnotator):
             return None, None
     
     def _process_vep_result(self, variant: Variant, vep_result: Dict[str, Any]) -> AnnotatedVariant:
-        """
-        Process a VEP result into an AnnotatedVariant.
-        
-        Args:
-            variant: Original Variant object.
-            vep_result: VEP result dictionary.
-            
-        Returns:
-            AnnotatedVariant object.
-        """
         # Initialize with default values
         gene_id = None
         gene_symbol = None
@@ -735,15 +629,6 @@ class VEPAnnotator(BaseAnnotator):
         )
     
     def _impact_priority(self, impact: str) -> int:
-        """
-        Get priority score for variant impact.
-        
-        Args:
-            impact: Impact string from VEP.
-            
-        Returns:
-            Priority score (higher is more severe).
-        """
         impact_map = {
             "HIGH": 4,
             "MODERATE": 3,
