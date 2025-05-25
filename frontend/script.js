@@ -131,7 +131,7 @@ async function initializeApp() {
     loadSettings();
 }
 
-// API Functions
+
 async function apiCall(endpoint, options = {}) {
     try {
         const url = ${AppState.apiEndpoint}/api${endpoint};
@@ -163,7 +163,6 @@ async function loadDrugsFromAPI() {
     } catch (error) {
         console.error('Failed to load drugs:', error);
         showToast('Failed to load drug database', 'error');
-        // Fallback to local drug data if API fails
         AppState.drugs = DRUG_DATABASE;
         populateAvailableDrugs();
     }
@@ -172,10 +171,10 @@ async function loadDrugsFromAPI() {
 async function loadReportsFromAPI() {
     try {
         const response = await apiCall('/reports');
-        // Map API response to frontend format
+        
         AppState.reports = response.reports.map(apiReport => ({
             id: apiReport.id,
-            jobId: apiReport.id, // Use the API report ID as jobId
+            jobId: apiReport.id, 
             title: Analysis for ${apiReport.patient_info?.name || apiReport.patient_info?.id || 'Unknown Patient'},
             date: apiReport.created_at,
             status: apiReport.status,
@@ -189,7 +188,6 @@ async function loadReportsFromAPI() {
     } catch (error) {
         console.error('Failed to load reports:', error);
         showToast('Failed to load reports', 'error');
-        // Load from localStorage as fallback
         loadStoredData();
     }
 }
@@ -198,16 +196,13 @@ async function uploadVcfFile(file) {
     try {
         const formData = new FormData();
         formData.append('file', file);
-        
-        // Show progress for large files
-        if (file.size > 100 * 1024 * 1024) { // > 100MB
+        if (file.size > 100 * 1024 * 1024) { 
             showToast(Uploading large file (${formatFileSize(file.size)}). This may take several minutes..., 'info');
         }
         
         const response = await fetch(${AppState.apiEndpoint}/api/upload-vcf, {
             method: 'POST',
             body: formData,
-            // Add timeout for large files (10 minutes)
             signal: AbortSignal.timeout(600000)
         });
         
@@ -281,12 +276,12 @@ async function checkAnalysisStatus(jobId) {
 }
 
 function setupEventListeners() {
-    // Navigation
+
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', handleNavigation);
     });
 
-    // VCF File Upload
+
     const vcfFileInput = document.getElementById('vcf-file');
     const vcfUploadArea = document.getElementById('vcf-upload-area');
     
@@ -334,7 +329,7 @@ function setupEventListeners() {
         });
     }
 
-    // Configuration checkboxes
+
     document.querySelectorAll('#step-4 input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', handleConfigChange);
     });
@@ -351,7 +346,7 @@ function setupEventListeners() {
         reportFilter.addEventListener('change', handleReportFilter);
     }
 
-    // View options
+
     document.querySelectorAll('.view-btn').forEach(btn => {
         btn.addEventListener('click', handleViewChange);
     });
@@ -373,7 +368,7 @@ function setupEventListeners() {
         drugEvidenceFilter.addEventListener('change', handleDrugDbFilter);
     }
 
-    // Settings
+
     document.querySelectorAll('#settings input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', handleSettingsChange);
     });
@@ -414,7 +409,6 @@ function handleNavigation(e) {
 }
 
 function switchSection(sectionName) {
-    // Update navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
@@ -424,7 +418,6 @@ function switchSection(sectionName) {
         activeLink.classList.add('active');
     }
 
-    // Update content
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
@@ -441,12 +434,9 @@ function switchSection(sectionName) {
             updateDashboard();
             break;
         case 'analysis':
-            // Don't automatically reset - preserve current progress
-            // Only reset if explicitly requested or if starting fresh
             if (AppState.currentStep === 0 || !AppState.currentStep) {
                 resetAnalysisForm();
             } else {
-                // Restore to current step
                 showStep(AppState.currentStep);
             }
             break;
@@ -464,7 +454,6 @@ function switchSection(sectionName) {
 
 // Analysis Step Functions
 function startNewAnalysis() {
-    // Explicitly reset the form and start fresh
     resetAnalysisForm();
     switchSection('analysis');
 }
@@ -500,7 +489,7 @@ function validateCurrentStep() {
         case 3:
             return validateDrugSelection();
         case 4:
-            return true; // Configuration is optional
+            return true; 
         default:
             return true;
     }
@@ -585,14 +574,10 @@ function handleDrop(e) {
 
 async function processVcfFile(file) {
     try {
-        // Show validation in progress
         const validationElement = document.getElementById('vcf-validation');
         validationElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Uploading and validating file...</span>';
-        
-        // Upload file to server
         const uploadResult = await uploadVcfFile(file);
-        
-        // Store file info
+
         AppState.vcfFile = {
             name: file.name,
             size: file.size,
@@ -605,10 +590,8 @@ async function processVcfFile(file) {
         document.getElementById('vcf-filesize').textContent = formatFileSize(file.size);
         document.getElementById('vcf-file-info').style.display = 'block';
         
-        // Show success validation
         validationElement.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> <span>File validated successfully</span>';
         
-        // Enable next button
         document.getElementById('vcf-next-btn').disabled = false;
         
         showToast('VCF file uploaded successfully', 'success');
@@ -616,11 +599,8 @@ async function processVcfFile(file) {
     } catch (error) {
         console.error('Error processing VCF file:', error);
         
-        // Show error validation
         const validationElement = document.getElementById('vcf-validation');
         validationElement.innerHTML = <i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> <span>Error: ${error.message}</span>;
-        
-        // Disable next button
         document.getElementById('vcf-next-btn').disabled = true;
         
         showToast(Upload failed: ${error.message}, 'error');
@@ -701,10 +681,8 @@ function toggleDrugSelection(drug) {
     const index = AppState.selectedDrugs.findIndex(selected => selected.id === drug.id);
     
     if (index === -1) {
-        // Add drug
         AppState.selectedDrugs.push(drug);
     } else {
-        // Remove drug
         AppState.selectedDrugs.splice(index, 1);
     }
     
@@ -723,7 +701,6 @@ function handleDrugSearch(e) {
 }
 
 function handleCategoryFilter(e) {
-    // Update active category button
     document.querySelectorAll('.category-btn').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -770,11 +747,9 @@ function addCustomDrug() {
     );
     
     if (databaseDrug) {
-        // Add from database
         AppState.selectedDrugs.push(databaseDrug);
         showToast(Added ${databaseDrug.name} from database, 'success');
     } else {
-        // Create custom drug entry
         const customDrug = {
             id: custom_${Date.now()},
             name: drugName,
@@ -789,8 +764,7 @@ function addCustomDrug() {
         AppState.selectedDrugs.push(customDrug);
         showToast(Added custom drug: ${drugName}, 'success');
     }
-    
-    // Clear input and update UI
+
     customDrugInput.value = '';
     updateSelectedDrugs();
     populateAvailableDrugs();
@@ -822,48 +796,37 @@ async function startAnalysis() {
         return;
     }
 
-    // Hide step 4 and show progress
     document.getElementById('step-4').classList.remove('active');
     document.getElementById('analysis-progress').style.display = 'block';
-    
-    // Start the analysis process
+
     await runAnalysis();
 }
 
 async function runAnalysis() {
     try {
-        // Update progress
         updateProgress(10, 'Starting analysis...', 'Preparing analysis request...');
-        
-        // Start analysis on server
         const analysisResponse = await startAnalysisAPI();
         AppState.currentJobId = analysisResponse.job_id;
         
         updateProgress(20, 'Analysis queued...', Job ID: ${AppState.currentJobId});
-        
-        // Poll for status updates
         await pollAnalysisStatus();
         
     } catch (error) {
         console.error('Analysis failed:', error);
         showToast(Analysis failed: ${error.message}, 'error');
-        
-        // Reset to step 4
         document.getElementById('analysis-progress').style.display = 'none';
         document.getElementById('step-4').classList.add('active');
     }
 }
 
 async function pollAnalysisStatus() {
-    const maxAttempts = 120; // 10 minutes with 5-second intervals
+    const maxAttempts = 120; 
     let attempts = 0;
     
     const poll = async () => {
         try {
             attempts++;
             const status = await checkAnalysisStatus(AppState.currentJobId);
-            
-            // Update progress based on status
             if (status.status === 'running') {
                 updateProgress(
                     Math.min(30 + status.progress * 0.6, 90), 
@@ -906,17 +869,14 @@ async function pollAnalysisStatus() {
                 throw new Error(errorMessage);
             }
             
-            // Continue polling if still running and haven't exceeded max attempts
             if (status.status === 'running' && attempts < maxAttempts) {
-                setTimeout(poll, 5000); // Poll every 5 seconds
+                setTimeout(poll, 5000); 
             } else if (attempts >= maxAttempts) {
                 throw new Error('Analysis timed out after 10 minutes. Please try again with a smaller VCF file or fewer drugs.');
             }
             
         } catch (error) {
             console.error('Error polling analysis status:', error);
-            
-            // Provide more specific error messages
             let errorMessage = error.message;
             if (error.message.includes('Failed to locate')) {
                 errorMessage = 'Python environment error. Please ensure Python 3 is properly installed and accessible.';
@@ -927,15 +887,12 @@ async function pollAnalysisStatus() {
             }
             
             showToast(Analysis error: ${errorMessage}, 'error');
-            
-            // Reset to step 4
             document.getElementById('analysis-progress').style.display = 'none';
             document.getElementById('step-4').classList.add('active');
         }
     };
-    
-    // Start polling
-    setTimeout(poll, 2000); // Initial delay
+
+    setTimeout(poll, 2000); 
 }
 
 function updateProgress(percentage, text, details) {
@@ -1335,8 +1292,6 @@ function loadSettings() {
     const savedSettings = localStorage.getItem('pharmgenome-settings');
     if (savedSettings) {
         const settings = JSON.parse(savedSettings);
-        
-        // Update form fields
         Object.keys(settings).forEach(key => {
             const element = document.getElementById(key);
             if (element) {
@@ -1347,8 +1302,6 @@ function loadSettings() {
                 }
             }
         });
-        
-        // Update app state
         if (settings['api-endpoint']) {
             AppState.apiEndpoint = settings['api-endpoint'];
         }
@@ -1361,8 +1314,6 @@ function handleSettingsChange(e) {
 
 function saveSettings() {
     const settings = {};
-    
-    // Collect all settings
     document.querySelectorAll('#settings input, #settings select').forEach(input => {
         if (input.type === 'checkbox') {
             settings[input.id] = input.checked;
@@ -1439,7 +1390,6 @@ async function downloadReport(reportId) {
             return;
         }
         
-        // Create download link
         const downloadUrl = ${AppState.apiEndpoint}/api/report/${report.jobId}/download;
         const link = document.createElement('a');
         link.href = downloadUrl;
@@ -1457,7 +1407,6 @@ async function downloadReport(reportId) {
 
 async function viewFullReport(jobId) {
     try {
-        // Open the full HTML report in a new window
         const reportUrl = ${AppState.apiEndpoint}/api/report/${jobId}/view;
         const newWindow = window.open(reportUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
         
@@ -1487,8 +1436,6 @@ function showToast(message, type = 'info') {
     `;
     
     container.appendChild(toast);
-    
-    // Auto remove after 5 seconds
     setTimeout(() => {
         if (toast.parentElement) {
             toast.remove();
