@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-Pharmacogenomics Engine - Main Entry Point
-
-This module serves as the entry point for the pharmacogenomics engine.
-It provides a command-line interface for users to input a VCF file and a list of drugs,
-and generates a personalized pharmacogenomics report with AI-powered analysis.
-"""
 
 import argparse
 import logging
@@ -34,15 +27,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def is_vcf_pre_annotated(vcf_path: str) -> bool:
-    """
-    Check if a VCF file is already annotated by looking for annotation headers or INFO fields.
-    
-    Args:
-        vcf_path: Path to the VCF file.
-        
-    Returns:
-        True if the VCF appears to be pre-annotated, False otherwise.
-    """
     try:
         with open(vcf_path, 'r') as f:
             for line in f:
@@ -77,16 +61,6 @@ def is_vcf_pre_annotated(vcf_path: str) -> bool:
         return False
 
 def convert_variants_to_annotated(variants: List, vcf_path: str) -> List[AnnotatedVariant]:
-    """
-    Convert parsed variants to AnnotatedVariant objects, extracting annotation info if available.
-    
-    Args:
-        variants: List of parsed variants.
-        vcf_path: Path to the VCF file for context.
-        
-    Returns:
-        List of AnnotatedVariant objects.
-    """
     annotated_variants = []
     
     for variant in variants:
