@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-Report Generator Module
-
-This module provides functionality to generate personalized pharmacogenomics reports
-in HTML or PDF format. It summarizes drug-gene interactions, risk assessments,
-and recommendations based on a patient's genetic profile.
-"""
 
 import logging
 import os
@@ -25,12 +18,6 @@ class ReportGenerator:
     """Generates personalized pharmacogenomics reports."""
     
     def __init__(self, template_dir: Optional[Path] = None):
-        """
-        Initialize the report generator.
-        
-        Args:
-            template_dir: Directory containing report templates.
-        """
         # Set up Jinja2 environment
         if template_dir is None:
             # Use default templates in the package
@@ -54,17 +41,6 @@ class ReportGenerator:
         output_path: Path,
         format: str = "html"
     ) -> str:
-        """
-        Generate a personalized pharmacogenomics report.
-        
-        Args:
-            explained_interactions: List of drug-gene interactions with explanations.
-            output_path: Output file path.
-            format: Output format ("html" or "pdf").
-            
-        Returns:
-            Path to the generated report.
-        """
         logger.info(f"Generating {format} report")
         
         # Extract unique drugs from interactions
@@ -117,15 +93,6 @@ class ReportGenerator:
             return str(output_path)
     
     def _render_html(self, report_data: Dict[str, Any]) -> str:
-        """
-        Render the report as HTML.
-        
-        Args:
-            report_data: Dictionary of data for the template.
-            
-        Returns:
-            HTML string.
-        """
         # Modern HTML template with improved styling
         html = f"""
         <!DOCTYPE html>
@@ -519,16 +486,6 @@ class ReportGenerator:
         return html
     
     def _html_to_pdf(self, html_content: str, output_path: Path) -> str:
-        """
-        Convert HTML content to PDF.
-        
-        Args:
-            html_content: HTML content as a string.
-            output_path: Output file path.
-            
-        Returns:
-            Path to the generated PDF.
-        """
         try:
             # Try to import weasyprint
             import weasyprint
